@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     BOOTSTRAP_ADMIN_USERNAME: str = "admin"
     BOOTSTRAP_ADMIN_EMAIL: str = "admin@ptit.local"
     BOOTSTRAP_ADMIN_FULL_NAME: str = "System Administrator"
-    BOOTSTRAP_ADMIN_PASSWORD: str = "password123"
+    BOOTSTRAP_ADMIN_PASSWORD: str = "matkhauratmanh"
     DISABLE_PUBLIC_REGISTER: bool = True
 
 
