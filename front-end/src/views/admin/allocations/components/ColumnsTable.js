@@ -131,7 +131,7 @@ export default function ColumnsTable(props) {
 
   const helperText = React.useMemo(() => {
     if (isStaff) {
-      return "Staff có thể tạo đề nghị cấp phát vật tư, xem phiếu của mình/phòng ban mình và xác nhận đã nhận vật tư.";
+      return "Staff chỉ có thể xem phiếu cấp phát của phòng ban mình và xác nhận đã nhận vật tư khi được cấp phát.";
     }
 
     if (canManageAllocations) {

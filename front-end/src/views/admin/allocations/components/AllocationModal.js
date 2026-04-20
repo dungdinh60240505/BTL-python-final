@@ -342,8 +342,7 @@ export default function AllocationModal(props) {
                 p="14px"
               >
                 <Text fontSize="sm" color="gray.500">
-                  Staff chỉ được tạo <b>đề nghị cấp phát vật tư</b>. Phòng ban và
-                  người nhận sẽ được backend tự gắn theo tài khoản hiện tại.
+                  Staff chỉ có thể xem phiếu cấp phát của phòng ban mình và xác nhận đã nhận vật tư khi được cấp phát.
                 </Text>
               </Box>
             ) : null}
