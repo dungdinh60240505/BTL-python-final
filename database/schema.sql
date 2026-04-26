@@ -9,6 +9,8 @@ DROP VIEW IF EXISTS vw_asset_status_summary;
 DROP TABLE IF EXISTS maintenances;
 DROP TABLE IF EXISTS allocations;
 DROP TABLE IF EXISTS assets;
+DROP TABLE IF EXISTS asset_quantities;
+DROP TABLE IF EXISTS quantity_assets;
 DROP TABLE IF EXISTS supplies;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS departments;
@@ -62,6 +64,31 @@ CREATE TABLE assets (
     FOREIGN KEY (assigned_department_id) REFERENCES departments(id) ON DELETE SET NULL,
     FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE TABLE quantity_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK ( quantity >= 0),
+    available_quantity INTEGER NOT NULL DEFAULT 0 CHECK (available_quantity >= 0 AND available_quantity <= quantity),
+    category VARCHAR(100) NOT NULL,
+    specification TEXT,
+    purchase_date DATE,
+    purchase_cost NUMERIC(15, 2),
+    status VARCHAR(30) NOT NULL DEFAULT 'available'
+        CHECK (status IN ('available', 'in_use', 'under_maintenance', 'damaged', 'liquidated')),
+    condition VARCHAR(20) NOT NULL DEFAULT 'good'
+        CHECK (condition IN ('new', 'good', 'fair', 'poor', 'broken')),
+    location VARCHAR(255),
+    note TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    assigned_department_id INTEGER,
+    assigned_user_id INTEGER,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (assigned_department_id) REFERENCES departments(id) ON DELETE SET NULL,
+    FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
 
 CREATE TABLE supplies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

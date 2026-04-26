@@ -12,6 +12,7 @@ from app.core.database import SessionLocal, create_db_and_tables
 
 import app.models.allocation
 import app.models.asset
+import app.models.asset_quantity
 import app.models.asset_loan_item
 import app.models.asset_loan_voucher
 import app.models.department
@@ -25,6 +26,7 @@ import app.models.warranty_ticket
 from app.routers.allocations import router as allocation_router
 from app.routers.asset_loans import router as asset_loan_router
 from app.routers.assets import router as asset_router
+from app.routers.asset_quantities import router as asset_quantity_router
 from app.routers.auth import router as auth_router
 from app.routers.departments import router as department_router
 from app.routers.maintenances import router as maintenance_router
@@ -102,6 +104,7 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(department_router, prefix=settings.API_V1_STR)
 app.include_router(user_router, prefix=settings.API_V1_STR)
 app.include_router(asset_router, prefix=settings.API_V1_STR)
+app.include_router(asset_quantity_router, prefix=settings.API_V1_STR)
 app.include_router(supply_router, prefix=settings.API_V1_STR)
 app.include_router(allocation_router, prefix=settings.API_V1_STR)
 app.include_router(maintenance_router, prefix=settings.API_V1_STR)
