@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     Enum as SqlEnum,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
@@ -53,6 +54,7 @@ class Asset(Base):
     serial_number: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
     specification: Mapped[str | None] = mapped_column(Text, nullable=True)
     purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    useful_life: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     purchase_cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
 
     status: Mapped[AssetStatus] = mapped_column(
@@ -82,6 +84,7 @@ class Asset(Base):
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    required_quantity_category: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
 
     assigned_department_id: Mapped[int | None] = mapped_column(
         ForeignKey("departments.id", ondelete="SET NULL"),

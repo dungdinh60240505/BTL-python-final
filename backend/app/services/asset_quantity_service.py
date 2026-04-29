@@ -4,7 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models.asset_quantity import AssetQuantity
+from app.models.asset_quantity import AssetQuantity, QuantityAssetApprovalStatus
 from app.models.department import Department
 from app.models.user import User, UserRole
 from app.schemas.asset_quantity import (
@@ -12,6 +12,7 @@ from app.schemas.asset_quantity import (
     AssetQuantityStatusUpdate,
     AssetQuantityUpdate,
 )
+from app.services.location_quantity_asset_service import create_kho_location
 
 
 def _apply_asset_quantity_visibility_scope(statement, current_user: User | None):
@@ -106,7 +107,10 @@ def list_asset_quantities(
     return list(db.scalars(statement).all())
 
 
-def create_asset_quantity(db: Session, payload: AssetQuantityCreate) -> AssetQuantity:
+def create_asset_quantity(
+    db: Session, payload: AssetQuantityCreate, current_user: User | None = None
+) -> AssetQuantity:
+    print("payload: ", payload);
     assigned_department_id = payload.assigned_department_id
     if assigned_department_id is not None:
         department = db.get(Department, assigned_department_id)
@@ -137,7 +141,14 @@ def create_asset_quantity(db: Session, payload: AssetQuantityCreate) -> AssetQua
             detail="available_quantity must be less than or equal to quantity",
         )
 
+    is_admin = current_user is not None and current_user.role == UserRole.ADMIN
+    approval_status = (
+        QuantityAssetApprovalStatus.APPROVED if is_admin else QuantityAssetApprovalStatus.PENDING
+    )
+    is_active = is_admin
+
     asset_quantity = AssetQuantity(
+        code=payload.code.strip(),
         name=payload.name.strip(),
         category=payload.category.strip(),
         quantity=normalized_quantity,
@@ -145,6 +156,7 @@ def create_asset_quantity(db: Session, payload: AssetQuantityCreate) -> AssetQua
         serial_number=payload.serial_number.strip() if payload.serial_number else None,
         specification=payload.specification.strip() if payload.specification else None,
         purchase_date=payload.purchase_date,
+        useful_life=payload.useful_life,
         purchase_cost=payload.purchase_cost,
         status=payload.status,
         condition=payload.condition,
@@ -152,12 +164,17 @@ def create_asset_quantity(db: Session, payload: AssetQuantityCreate) -> AssetQua
         note=payload.note.strip() if payload.note else None,
         assigned_department_id=assigned_department_id,
         assigned_user_id=assigned_user_id,
-        is_active=payload.is_active,
+        is_active=is_active,
+        approval_status=approval_status,
+        required_quantity_category=payload.required_quantity_category,
     )
 
     db.add(asset_quantity)
     db.commit()
     db.refresh(asset_quantity)
+
+    if is_admin:
+        create_kho_location(db=db, quantity_assets_id=asset_quantity.id, lot_quantity=normalized_quantity)
 
     return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
 
@@ -170,6 +187,9 @@ def update_asset_quantity(
     next_quantity = asset_quantity.quantity
     next_available_quantity = asset_quantity.available_quantity
 
+    if "code" in update_data and update_data["code"] is not None:
+        asset_quantity.code = update_data["code"].strip()
+
     if "name" in update_data and update_data["name"] is not None:
         asset_quantity.name = update_data["name"].strip()
 
@@ -179,16 +199,14 @@ def update_asset_quantity(
     if "quantity" in update_data and update_data["quantity"] is not None:
         next_quantity = update_data["quantity"]
 
+    if "useful_life" in update_data and update_data["useful_life"] is not None:
+        asset_quantity.useful_life = update_data["useful_life"]
+
     if (
         "available_quantity" in update_data
         and update_data["available_quantity"] is not None
     ):
         next_available_quantity = update_data["available_quantity"]
-
-    if "serial_number" in update_data:
-        asset_quantity.serial_number = (
-            update_data["serial_number"].strip() if update_data["serial_number"] else None
-        )
 
     if next_available_quantity > next_quantity:
         raise HTTPException(
@@ -272,13 +290,42 @@ def update_asset_quantity_status(
 
     return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
 
-
 def deactivate_asset_quantity(db: Session, asset_quantity: AssetQuantity) -> AssetQuantity:
     asset_quantity.is_active = False
     db.add(asset_quantity)
     db.commit()
     db.refresh(asset_quantity)
 
+    return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
+
+
+def approve_asset_quantity(db: Session, asset_quantity: AssetQuantity) -> AssetQuantity:
+    if asset_quantity.approval_status == QuantityAssetApprovalStatus.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lô tài sản đã được duyệt rồi.",
+        )
+    asset_quantity.approval_status = QuantityAssetApprovalStatus.APPROVED
+    asset_quantity.is_active = True
+    db.add(asset_quantity)
+    db.commit()
+    db.refresh(asset_quantity)
+
+    create_kho_location(db=db, quantity_assets_id=asset_quantity.id, lot_quantity=asset_quantity.quantity)
+    return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
+
+
+def reject_asset_quantity(db: Session, asset_quantity: AssetQuantity) -> AssetQuantity:
+    if asset_quantity.approval_status == QuantityAssetApprovalStatus.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Không thể từ chối lô tài sản đã được duyệt.",
+        )
+    asset_quantity.approval_status = QuantityAssetApprovalStatus.REJECTED
+    asset_quantity.is_active = False
+    db.add(asset_quantity)
+    db.commit()
+    db.refresh(asset_quantity)
     return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
 
 

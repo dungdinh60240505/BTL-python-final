@@ -8,14 +8,9 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  SimpleGrid,
   Select,
-  Table,
-  Tbody,
-  Td,
   Text,
-  Th,
-  Thead,
-  Tr,
   useColorModeValue,
 } from "@chakra-ui/react";
 import { AddIcon, SearchIcon } from "@chakra-ui/icons";
@@ -66,6 +61,57 @@ function ActiveBadge({ isActive }) {
   );
 }
 
+function ApprovalBadge({ status }) {
+  const colorMap = { approved: "green", pending: "yellow", rejected: "red" };
+  const labelMap = { approved: "Đã duyệt", pending: "Chờ duyệt", rejected: "Không duyệt" };
+  return (
+    <Badge colorScheme={colorMap[status] || "gray"} borderRadius="999px" px="10px" py="4px">
+      {labelMap[status] || status}
+    </Badge>
+  );
+}
+
+function UseFulLifeBadge({ purchaseDate, usefulLifeMonths }) {
+  const calcDepreciationPercent = () => {
+    if (!purchaseDate || !usefulLifeMonths) return 0;
+
+    const start = new Date(purchaseDate);
+    const now = new Date();
+
+    let months =
+      (now.getFullYear() - start.getFullYear()) * 12 +
+      (now.getMonth() - start.getMonth());
+
+    if (now.getDate() < start.getDate()) {
+      months--;
+    }
+
+    const percent = (months / usefulLifeMonths) * 100;
+
+    return Math.min(Math.max(percent, 0), 100); // clamp 0–100
+  };
+
+  const percent = calcDepreciationPercent();
+
+  const getColor = () => {
+    if (percent < 25) return "green";
+    if (percent < 50) return "yellow";
+    if (percent < 75) return "orange";
+    return "red";
+  };
+
+  return (
+    <Badge
+      colorScheme={getColor()}
+      borderRadius="999px"
+      px="10px"
+      py="4px"
+    >
+      KH:{percent.toFixed(0)}%
+    </Badge>
+  );
+}
+
 export default function ColumnsTable(props) {
   const {
     tableData = [],
@@ -75,12 +121,15 @@ export default function ColumnsTable(props) {
     onSaveAsset,
     onDeactivateAsset,
     onCreateAsset,
-    addLabel = "Thêm tài sản",
+    onApproveAsset,
+    onRejectAsset,
     canManageAssets = false,
     canDeactivateAssetByRole = false,
+    currentUserRole = "",
     loading = false,
   } = props;
 
+  const addLabel = currentUserRole === "manager" ? "Yêu cầu thêm tài sản" : "Thêm tài sản";
   const [keyword, setKeyword] = React.useState("");
   const [categoryFilter, setCategoryFilter] = React.useState("");
   const [statusFilter, setStatusFilter] = React.useState("");
@@ -94,10 +143,14 @@ export default function ColumnsTable(props) {
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
-  const rowHoverBg = useColorModeValue("gray.100", "whiteAlpha.100");
+  const cardBg = useColorModeValue("white", "navy.800");
   const searchIconColor = useColorModeValue("gray.400", "gray.300");
   const searchInputBg = useColorModeValue("secondaryGray.300", "navy.900");
   const searchInputColor = useColorModeValue("gray.700", "gray.100");
+  const hoverShadow = useColorModeValue(
+    "xl",
+    "0 12px 30px rgba(0, 0, 0, 0.5)"
+  );
 
   const categoryOptions = React.useMemo(() => {
     const unique = new Set(
@@ -115,7 +168,6 @@ export default function ColumnsTable(props) {
       const matchesKeyword =
         !normalizedKeyword ||
         [
-          row.code,
           row.name,
           row.category,
           row.serial_number,
@@ -153,7 +205,14 @@ export default function ColumnsTable(props) {
         matchesActive
       );
     });
-  }, [activeFilter, categoryFilter, conditionFilter, keyword, statusFilter, tableData]);
+  }, [
+    activeFilter,
+    categoryFilter,
+    conditionFilter,
+    keyword,
+    statusFilter,
+    tableData,
+  ]);
 
   React.useEffect(() => {
     setPageIndex(0);
@@ -200,6 +259,32 @@ export default function ColumnsTable(props) {
     handleCloseModal();
   };
 
+  const handleApprove = async (asset) => {
+    await onApproveAsset?.handler?.(asset);
+    handleCloseModal();
+  };
+
+  const handleReject = async (asset) => {
+    await onRejectAsset?.handler?.(asset);
+    handleCloseModal();
+  };
+
+  function getMonthDiff(fromDate) {
+    const start = new Date(fromDate);
+    const end = new Date();
+
+    let months =
+      (end.getFullYear() - start.getFullYear()) * 12 +
+      (end.getMonth() - start.getMonth());
+
+    // Nếu ngày hiện tại chưa tới ngày trong tháng → trừ 1 tháng
+    if (end.getDate() < start.getDate()) {
+      months--;
+    }
+
+    return months;
+  }
+
   const startRow = filteredData.length === 0 ? 0 : currentPage * PAGE_SIZE + 1;
   const endRow = Math.min((currentPage + 1) * PAGE_SIZE, filteredData.length);
 
@@ -217,11 +302,11 @@ export default function ColumnsTable(props) {
         >
           <Box>
             <Text color={textColor} fontSize="22px" fontWeight="700">
-              {title || "Quản lý tài sản"}
+              {title || "Quản lý tài sản số lượng"}
             </Text>
             <Text mt="4px" color="gray.500" fontSize="sm">
               {canManageAssets
-                ? "Admin và manager có thể tạo hoặc sửa tài sản. Chỉ admin mới được vô hiệu hóa."
+                ? "Admin và manager có thể tạo hoặc sửa. Chỉ admin mới được vô hiệu hóa. Việc phân bổ vị trí tài sản số lượng lớn là của phòng ban phụ trách tài sản đó. Việc quản lí nhập/xuất tài sản là của admin."
                 : "Bạn đang ở chế độ chỉ xem."}
             </Text>
           </Box>
@@ -250,7 +335,7 @@ export default function ColumnsTable(props) {
             <Input
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="Tìm mã, tên, số seri..." 
+              placeholder="Tìm theo tên, danh mục, vị trí..."
               bg={searchInputBg}
               color={searchInputColor}
               borderRadius="16px"
@@ -292,7 +377,7 @@ export default function ColumnsTable(props) {
             maxW={{ base: "100%", md: "180px" }}
             borderRadius="16px"
           >
-            <option value="">Tất cả tình trạng </option>
+            <option value="">Tất cả tình trạng</option>
             <option value="new">Mới</option>
             <option value="good">Tốt</option>
             <option value="fair">Trung bình</option>
@@ -312,62 +397,98 @@ export default function ColumnsTable(props) {
           </Select>
         </Flex>
 
-        <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th borderColor={borderColor}>STT</Th>
-                <Th borderColor={borderColor}>Mã</Th>
-                <Th borderColor={borderColor}>Tên</Th>
-                <Th borderColor={borderColor}>Danh mục</Th>
-                <Th borderColor={borderColor}>Phòng ban</Th>
-                <Th borderColor={borderColor}>Người dùng</Th>
-                <Th borderColor={borderColor}>Trạng thái</Th>
-                <Th borderColor={borderColor}>Hoạt động</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {loading ? (
-                <Tr>
-                  <Td colSpan={8} borderColor={borderColor}>
-                    <Text py="20px" textAlign="center" color="gray.500">
-                      Đang tải dữ liệu...
-                    </Text>
-                  </Td>
-                </Tr>
-              ) : paginatedRows.length === 0 ? (
-                <Tr>
-                  <Td colSpan={8} borderColor={borderColor}>
-                    <Text py="20px" textAlign="center" color="gray.500">
-                      Không có tài sản phù hợp.
-                    </Text>
-                  </Td>
-                </Tr>
-              ) : (
-                paginatedRows.map((row) => (
-                  <Tr
-                    key={row.id}
-                    onClick={() => handleRowClick(row)}
-                    cursor="pointer"
-                    _hover={{ bg: rowHoverBg }}
-                  >
-                    <Td borderColor={borderColor}>{row.stt}</Td>
-                    <Td borderColor={borderColor}>{row.code}</Td>
-                    <Td borderColor={borderColor}>{row.name}</Td>
-                    <Td borderColor={borderColor}>{row.category}</Td>
-                    <Td borderColor={borderColor}>{row.assigned_department}</Td>
-                    <Td borderColor={borderColor}>{row.assigned_user}</Td>
-                    <Td borderColor={borderColor}>
+        <Box px="25px" pb="10px">
+          {loading ? (
+            <Text py="20px" textAlign="center" color="gray.500">
+              Đang tải dữ liệu...
+            </Text>
+          ) : paginatedRows.length === 0 ? (
+            <Text py="20px" textAlign="center" color="gray.500">
+              Không có tài sản phù hợp.
+            </Text>
+          ) : (
+            <SimpleGrid columns={{ base: 1, md: 2, xl: 3 }} spacing="16px">
+              {paginatedRows.map((row) => (
+                <Card
+                  key={row.id}
+                  role="group"
+                  bg={cardBg}
+                  border="1px solid"
+                  borderColor={borderColor}
+                  p="16px"
+                  cursor="pointer"
+                  position="relative"
+                  overflow="hidden"
+                  transition="all 0.2s ease"
+                  _hover={{
+                    transform: "scale(1.02)",
+                    boxShadow: hoverShadow,
+                    zIndex: 1,
+                  }}
+                  onClick={() => handleRowClick(row)}
+                >
+                  <Flex justify="space-between" align="flex-start" gap="12px">
+                    <Box minW="0">
+                      <Text color={textColor} fontWeight="700" noOfLines={2}>
+                        {row.name || "-"}
+                      </Text>
+                      <Text mt="4px" fontSize="sm" color="gray.500" noOfLines={1}>
+                        {row.category || "-"}
+                      </Text>
+                    </Box>
+                    <Box flexShrink={0}>
                       <StatusBadge status={row.status} />
-                    </Td>
-                    <Td borderColor={borderColor}>
-                      <ActiveBadge isActive={row.is_active} />
-                    </Td>
-                  </Tr>
-                ))
-              )}
-            </Tbody>
-          </Table>
+                    </Box>
+                  </Flex>
+
+                  <Flex mt="12px" gap="10px" wrap="wrap" align="center">
+                    <Badge borderRadius="999px" px="10px" py="4px" colorScheme="purple">
+                      SL: {row.quantity ?? 0}
+                    </Badge>
+                    <UseFulLifeBadge purchaseDate={row.purchase_date} usefulLifeMonths={row.useful_life} />
+                    <ApprovalBadge status={row.approval_status} />
+                    <ActiveBadge isActive={row.is_active} />
+                  </Flex>
+
+                  <Flex mt="12px" justify="space-between" gap="10px" wrap="wrap">
+                    <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                      PB: {row.assigned_department || "-"}
+                    </Text>
+                    <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                      ND: {row.assigned_user || "-"}
+                    </Text>
+                  </Flex>
+
+                  <Box
+                    mt="10px"
+                    pt="10px"
+                    borderTop="1px solid"
+                    borderColor={borderColor}
+                    opacity={0}
+                    maxH="0px"
+                    transition="all 0.2s ease"
+                    _groupHover={{
+                      opacity: 1,
+                      maxH: "220px",
+                    }}
+                  >
+                    <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                      Vị trí: {row.location || "-"}
+                    </Text>
+                    <Text mt="6px" fontSize="sm" color="gray.600" noOfLines={2}>
+                      Thông số: {row.specification || "-"}
+                    </Text>
+                    <Text mt="6px" fontSize="sm" color="gray.600" noOfLines={2}>
+                      Ghi chú: {row.note || "-"}
+                    </Text>
+                    <Text mt="8px" fontSize="xs" color="gray.500">
+                      Cập nhật: {row.updated_at || "-"}
+                    </Text>
+                  </Box>
+                </Card>
+              ))}
+            </SimpleGrid>
+          )}
         </Box>
 
         <Flex
@@ -418,16 +539,20 @@ export default function ColumnsTable(props) {
             ? Boolean(onCreateAsset?.loading)
             : Boolean(selectedAsset && selectedAsset.id === onSaveAsset?.loadingId)
         }
-        isDeactivating={Boolean(
-          selectedAsset && selectedAsset.id === onDeactivateAsset?.loadingId
-        )}
+        isDeactivating={Boolean(selectedAsset && selectedAsset.id === onDeactivateAsset?.loadingId)}
+        isApproving={Boolean(selectedAsset && selectedAsset.id === onApproveAsset?.loadingId)}
+        isRejecting={Boolean(selectedAsset && selectedAsset.id === onRejectAsset?.loadingId)}
         onClose={handleCloseModal}
         onSave={modalMode === "create" ? handleCreate : handleSave}
         onDeactivate={handleDeactivate}
+        onApprove={handleApprove}
+        onReject={handleReject}
         mode={modalMode}
         canManageAssets={canManageAssets}
         canDeactivateAssetByRole={canDeactivateAssetByRole}
+        currentUserRole={currentUserRole}
       />
     </>
   );
 }
+

@@ -8,6 +8,7 @@ import {
   MdPerson,
   MdAssignmentReturn,
   MdBuild,
+  MdAssessment,
 } from "react-icons/md";
 
 // Admin Imports
@@ -16,6 +17,8 @@ import Profile from "views/admin/profile";
 import Departments from "views/admin/departments";
 import Users from "views/admin/users";
 import AssetsTable from "views/admin/assets";
+import QuantityAssetsTable from "views/admin/quantity_assets"
+import AssetNeeds from "views/admin/asset_needs"
 import SuppliesTable from "views/admin/supplies";
 import Allocations from "views/admin/allocations";
 import Maintenance from "views/admin/maintenances";
@@ -52,7 +55,7 @@ const routes = [
     roles: ["admin", "manager"],
   },
   {
-    name: "Tài sản",
+    name: "Tài sản văn phòng",
     layout: "/admin",
     path: "/assets-tables",
     icon: (
@@ -65,6 +68,29 @@ const routes = [
     ),
     component: <AssetsTable />,
     roles: ["admin", "manager", "staff"],
+  },
+  {
+    name: "Tài sản số lượng lớn",
+    layout: "/admin",
+    path: "/quantity-assets-tables",
+    icon: (
+      <Icon
+        as={MdOutlineShoppingCart}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
+    ),
+    component: <QuantityAssetsTable />,
+    roles: ["admin", "manager", "staff"],
+  },
+  {
+    name: "Nhu cầu tài sản",
+    layout: "/admin",
+    path: "/asset-needs",
+    icon: <Icon as={MdAssessment} width="20px" height="20px" color="inherit" />,
+    component: <AssetNeeds />,
+    roles: ["admin"],
   },
   {
     name: "Vật tư",
@@ -82,7 +108,7 @@ const routes = [
     roles: ["admin", "manager", "staff"],
   },
   {
-    name: "Cấp phát",
+    name: "Cấp phát văn phòng",
     layout: "/admin",
     path: "/allocations",
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
@@ -127,6 +153,7 @@ const routes = [
     component: <SupplyExports />,
     roles: ["admin", "manager"],
   },
+  
   {
     name: "Bảo hành",
     layout: "/admin",

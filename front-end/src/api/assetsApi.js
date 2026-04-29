@@ -51,3 +51,11 @@ export function deactivateAsset(assetId) {
     fallbackErrorMessage: "Vô hiệu hóa tài sản thất bại.",
   });
 }
+
+export function activateAsset(assetId) {
+  return apiRequest(`/assets/${assetId}/activate`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Kích hoạt tài sản thất bại.",
+  });
+}

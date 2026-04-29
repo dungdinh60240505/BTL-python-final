@@ -51,3 +51,11 @@ export function deactivateSupply(supplyId) {
     fallbackErrorMessage: "Vô hiệu hóa vật tư thất bại.",
   });
 }
+
+export function activateSupply(supplyId) {
+  return apiRequest(`/supplies/${supplyId}/activate`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Kích hoạt vật tư thất bại.",
+  });
+}

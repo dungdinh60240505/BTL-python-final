@@ -62,6 +62,7 @@ export default function ColumnsTable(props) {
     departmentOptions = [],
     onSaveSupply,
     onDeactivateSupply,
+    onActivateSupply,
     onCreateSupply,
     onUpdateStock,
     addLabel = "Thêm vật tư",
@@ -171,6 +172,7 @@ export default function ColumnsTable(props) {
     if (
       selectedSupply?.id === onSaveSupply?.loadingId ||
       selectedSupply?.id === onDeactivateSupply?.loadingId ||
+      selectedSupply?.id === onActivateSupply?.loadingId ||
       selectedSupply?.id === onUpdateStock?.loadingId ||
       onCreateSupply?.loading
     ) {
@@ -188,6 +190,10 @@ export default function ColumnsTable(props) {
 
   const handleDeactivate = async (supply) => {
     await onDeactivateSupply?.handler?.(supply);
+    handleCloseModal();
+  };
+  const handleActivate = async (supply) => {
+    await onActivateSupply?.handler?.(supply);
     handleCloseModal();
   };
 
@@ -425,12 +431,16 @@ export default function ColumnsTable(props) {
         isDeactivating={Boolean(
           selectedSupply && selectedSupply.id === onDeactivateSupply?.loadingId
         )}
+        isActivating={Boolean(
+          selectedSupply && selectedSupply.id === onActivateSupply?.loadingId
+        )}
         isUpdatingStock={Boolean(
           selectedSupply && selectedSupply.id === onUpdateStock?.loadingId
         )}
         onClose={handleCloseModal}
         onSave={modalMode === "create" ? handleCreate : handleSave}
         onDeactivate={handleDeactivate}
+        onActivate={handleActivate}
         onUpdateStock={handleUpdateStock}
         mode={modalMode}
         canManageSupplies={canManageSupplies}

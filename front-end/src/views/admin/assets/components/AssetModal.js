@@ -45,6 +45,7 @@ const initialFormData = {
   serial_number: "",
   specification: "",
   purchase_date: "",
+  useful_life: 0,
   purchase_cost: "",
   status: "available",
   condition: "good",
@@ -63,14 +64,15 @@ export default function AssetModal(props) {
     isOpen,
     isSubmitting,
     isDeactivating,
+    isActivating,
     onClose,
     onDeactivate,
+    onActivate,
     onSave,
     mode = "edit",
     canManageAssets = false,
     canDeactivateAssetByRole = false,
   } = props;
-
   const isCreateMode = mode === "create";
   const [isEditing, setIsEditing] = React.useState(isCreateMode);
 
@@ -80,7 +82,6 @@ export default function AssetModal(props) {
   const readOnlyBg = useColorModeValue("secondaryGray.300", "navy.700");
 
   const [formData, setFormData] = React.useState(initialFormData);
-
   React.useEffect(() => {
     if (!isOpen) return;
 
@@ -99,6 +100,7 @@ export default function AssetModal(props) {
       serial_number: asset.serial_number || "",
       specification: asset.specification || "",
       purchase_date: asset.purchase_date || "",
+      useful_life: asset.useful_life || 0,
       purchase_cost: asset.purchase_cost || "",
       status: asset.status || "available",
       condition: asset.condition || "good",
@@ -132,6 +134,7 @@ export default function AssetModal(props) {
       serial_number: formData.serial_number,
       specification: formData.specification,
       purchase_date: formData.purchase_date,
+      useful_life: formData.useful_life,
       purchase_cost: formData.purchase_cost,
       status: formData.status,
       condition: formData.condition,
@@ -167,7 +170,7 @@ export default function AssetModal(props) {
     damaged: "Bị hỏng",
     liquidated: "Đã thanh lý",
   }
-
+  if(isReadOnly) console.log("Chỉ được đọc")
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="4xl" isCentered scrollBehavior="inside">
       <ModalOverlay />
@@ -230,6 +233,13 @@ export default function AssetModal(props) {
                   <FormControl>
                     <FormLabel>Ngày mua</FormLabel>
                     <Input value={asset?.purchase_date || ""} {...readOnlyFieldProps} />
+                  </FormControl>
+                </GridItem>
+
+                <GridItem>
+                  <FormControl>
+                    <FormLabel>Thời gian khấu hao (Tháng)</FormLabel>
+                    <Input value={asset?.useful_life ?? 0} {...readOnlyFieldProps} />
                   </FormControl>
                 </GridItem>
 
@@ -382,6 +392,19 @@ export default function AssetModal(props) {
 
                 <GridItem>
                   <FormControl>
+                    <FormLabel>Thời gian khấu hao (Tháng)</FormLabel>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.useful_life}
+                      onChange={(e) => handleChange("useful_life", e.target.value)}
+                    />
+                  </FormControl>
+                </GridItem>
+
+                <GridItem>
+                  <FormControl>
                     <FormLabel>Giá mua</FormLabel>
                     <Input
                       type="number"
@@ -472,7 +495,7 @@ export default function AssetModal(props) {
                     </Select>
                   </FormControl>
                 </GridItem>
-
+                      {/* nếu không phải create mode */}
                 {!isCreateMode ? (
                   <GridItem>
                     <FormControl display="flex" alignItems="center">
@@ -480,7 +503,7 @@ export default function AssetModal(props) {
                       <Switch
                         isChecked={formData.is_active}
                         onChange={(e) => handleChange("is_active", e.target.checked)}
-                        isDisabled
+                        isDisabled={canDeactivateAssetByRole ? false: true}
                       />
                     </FormControl>
                   </GridItem>
@@ -541,7 +564,7 @@ export default function AssetModal(props) {
                 Hủy
               </Button>
 
-              {canDeactivateAssetByRole && asset?.is_active ? (
+              {canDeactivateAssetByRole && (asset?.is_active ? (
                 <Button
                   colorScheme="red"
                   variant="outline"
@@ -550,7 +573,16 @@ export default function AssetModal(props) {
                 >
                   Vô hiệu hóa
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => onActivate?.(asset)}
+                  isLoading={isActivating}
+                >
+                  Kích hoạt
+                </Button>
+              ))}
 
               <Button
                 colorScheme="blue"

@@ -19,6 +19,7 @@ class AssetBase(BaseModel):
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
+    useful_life: int | None = Field(default=None, ge=0)
     purchase_cost: Decimal | None = Field(default=None, ge=0)
     status: AssetStatus = AssetStatus.AVAILABLE
     condition: AssetCondition = AssetCondition.GOOD
@@ -42,6 +43,7 @@ class AssetUpdate(BaseModel):
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
+    useful_life: int | None = Field(default=None, ge=0)
     purchase_cost: Decimal | None = Field(default=None, ge=0)
     status: AssetStatus | None = None
     condition: AssetCondition | None = None
@@ -62,6 +64,7 @@ class AssetResponse(BaseModel):
     serial_number: str | None = None
     specification: str | None = None
     purchase_date: date | None = None
+    useful_life: int | None = None
     purchase_cost: Decimal | None = None
     status: AssetStatus
     condition: AssetCondition

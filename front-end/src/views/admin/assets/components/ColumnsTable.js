@@ -25,6 +25,9 @@ import AssetModal from "./AssetModal";
 
 const PAGE_SIZE = 10;
 
+const APPROVAL_COLOR = { approved: "green", pending: "yellow", rejected: "red" };
+const APPROVAL_LABEL = { approved: "Đã duyệt", pending: "Chờ duyệt", rejected: "Không duyệt" };
+
 function StatusBadge({ status }) {
   const colorMap = {
     available: "green",
@@ -66,6 +69,47 @@ function ActiveBadge({ isActive }) {
   );
 }
 
+function UseFulLifeBadge({ purchaseDate, usefulLifeMonths }) {
+  const calcDepreciationPercent = () => {
+    if (!purchaseDate || !usefulLifeMonths) return 0;
+
+    const start = new Date(purchaseDate);
+    const now = new Date();
+
+    let months =
+      (now.getFullYear() - start.getFullYear()) * 12 +
+      (now.getMonth() - start.getMonth());
+
+    if (now.getDate() < start.getDate()) {
+      months--;
+    }
+
+    const percent = (months / usefulLifeMonths) * 100;
+
+    return Math.min(Math.max(percent, 0), 100); // clamp 0–100
+  };
+
+  const percent = calcDepreciationPercent();
+
+  const getColor = () => {
+    if (percent < 25) return "green";
+    if (percent < 50) return "yellow";
+    if (percent < 75) return "orange";
+    return "red";
+  };
+
+  return (
+    <Badge
+      colorScheme={getColor()}
+      borderRadius="999px"
+      px="10px"
+      py="4px"
+    >
+      {percent.toFixed(0)}%
+    </Badge>
+  );
+}
+
 export default function ColumnsTable(props) {
   const {
     tableData = [],
@@ -74,8 +118,9 @@ export default function ColumnsTable(props) {
     userOptions = [],
     onSaveAsset,
     onDeactivateAsset,
+    onActivateAsset,
     onCreateAsset,
-    addLabel = "Thêm tài sản",
+    addLabel = "Yêu cầu thêm tài sản",
     canManageAssets = false,
     canDeactivateAssetByRole = false,
     loading = false,
@@ -167,6 +212,7 @@ export default function ColumnsTable(props) {
   );
 
   const handleRowClick = (asset) => {
+    console.log("row data: ", asset)
     setSelectedAsset(asset);
     setModalMode("edit");
     setIsModalOpen(true);
@@ -176,6 +222,7 @@ export default function ColumnsTable(props) {
     if (
       selectedAsset?.id === onSaveAsset?.loadingId ||
       selectedAsset?.id === onDeactivateAsset?.loadingId ||
+      selectedAsset?.id === onActivateAsset?.loadingId ||
       onCreateAsset?.loading
     ) {
       return;
@@ -192,6 +239,12 @@ export default function ColumnsTable(props) {
 
   const handleDeactivate = async (asset) => {
     await onDeactivateAsset?.handler?.(asset);
+    handleCloseModal();
+  };
+
+  const handleActivate = async (asset) => {
+    await onActivateAsset?.handler?.(asset);
+    console.log("Xử lí xong kích hoạt")
     handleCloseModal();
   };
 
@@ -321,8 +374,8 @@ export default function ColumnsTable(props) {
                 <Th borderColor={borderColor}>Tên</Th>
                 <Th borderColor={borderColor}>Danh mục</Th>
                 <Th borderColor={borderColor}>Phòng ban</Th>
-                <Th borderColor={borderColor}>Người dùng</Th>
                 <Th borderColor={borderColor}>Trạng thái</Th>
+                <Th borderColor={borderColor}>Khấu hao</Th>
                 <Th borderColor={borderColor}>Hoạt động</Th>
               </Tr>
             </Thead>
@@ -356,9 +409,11 @@ export default function ColumnsTable(props) {
                     <Td borderColor={borderColor}>{row.name}</Td>
                     <Td borderColor={borderColor}>{row.category}</Td>
                     <Td borderColor={borderColor}>{row.assigned_department}</Td>
-                    <Td borderColor={borderColor}>{row.assigned_user}</Td>
                     <Td borderColor={borderColor}>
                       <StatusBadge status={row.status} />
+                    </Td>
+                    <Td borderColor={borderColor}>
+                      <UseFulLifeBadge purchaseDate={row.purchase_date} usefulLifeMonths={row.useful_life} />
                     </Td>
                     <Td borderColor={borderColor}>
                       <ActiveBadge isActive={row.is_active} />
@@ -421,9 +476,13 @@ export default function ColumnsTable(props) {
         isDeactivating={Boolean(
           selectedAsset && selectedAsset.id === onDeactivateAsset?.loadingId
         )}
+        isActivating={Boolean(
+          selectedAsset && selectedAsset.id === onActivateAsset?.loadingId
+        )}
         onClose={handleCloseModal}
         onSave={modalMode === "create" ? handleCreate : handleSave}
         onDeactivate={handleDeactivate}
+        onActivate={handleActivate}
         mode={modalMode}
         canManageAssets={canManageAssets}
         canDeactivateAssetByRole={canDeactivateAssetByRole}

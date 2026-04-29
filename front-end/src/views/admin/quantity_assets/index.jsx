@@ -6,9 +6,11 @@ import ColumnsTable from "views/admin/quantity_assets/components/ColumnsTable";
 import { getCurrentUser, logout } from "api/authApi";
 import { isUnauthorizedError } from "api/http";
 import {
+  approveAsset,
   createAsset,
   deactivateAsset,
   listAssets,
+  rejectAsset,
   updateAsset,
 } from "api/quantityAssetsApi";
 import { listDepartments } from "api/departmentsApi";
@@ -31,11 +33,13 @@ function mapAssetToRow(item, index) {
     stt: index + 1,
     id: item.id,
     name: item.name || "",
+    code: item.code || "không có code",
     quantity: item.quantity || 0,
     available_quantity: item.available_quantity || 0,
     category: item.category || "",
     specification: item.specification || "",
     purchase_date: item.purchase_date || "",
+    useful_life: item.useful_life || 0,
     purchase_cost: formatCurrencyValue(item.purchase_cost),
     status: item.status || "available",
     condition: item.condition || "good",
@@ -46,6 +50,7 @@ function mapAssetToRow(item, index) {
     assigned_department: item.assigned_department?.name || "-",
     assigned_user: item.assigned_user?.full_name || "-",
     is_active: item.is_active ?? true,
+    approval_status: item.approval_status || "pending",
     created_at: formatDateTime(item.created_at),
     updated_at: formatDateTime(item.updated_at),
   };
@@ -79,12 +84,14 @@ export default function Assets() {
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
   const [deactivatingId, setDeactivatingId] = React.useState(null);
+  const [approvingId, setApprovingId] = React.useState(null);
+  const [rejectingId, setRejectingId] = React.useState(null);
   const [currentUserRole, setCurrentUserRole] = React.useState("");
 
   const canManageAssets =
     currentUserRole === "admin" || currentUserRole === "manager";
   const canDeactivateAssetByRole = currentUserRole === "admin";
-
+  const isAdmin = currentUserRole === "admin";
   const handleUnauthorized = React.useCallback(() => {
     logout();
 
@@ -101,7 +108,7 @@ export default function Assets() {
 
   const fetchAssets = React.useCallback(async () => {
     const assets = await listAssets({ limit: 200 });
-
+    console.log("Dữ liệu tài sản theo lô: ", assets)
     setTableData(
       [...assets]
         .sort((a, b) => a.id - b.id)
@@ -172,6 +179,7 @@ export default function Assets() {
   }, [loadPageData]);
 
   const buildAssetPayload = (asset) => {
+    const code = String(asset.code || "").trim();
     const name = String(asset.name || "").trim();
     const category = String(asset.category || "").trim();
 
@@ -180,12 +188,14 @@ export default function Assets() {
     }
 
     return {
+      code,
       name,
       category,
       quantity: normalizeNullableNumber(asset.quantity),
       available_quantity: normalizeNullableNumber(asset.available_quantity),
       specification: normalizeNullableText(asset.specification),
       purchase_date: normalizeNullableText(asset.purchase_date),
+      useful_life: normalizeNullableNumber(asset.useful_life),
       purchase_cost: normalizeNullableNumber(asset.purchase_cost),
       status: String(asset.status || "available").trim(),
       condition: String(asset.condition || "good").trim(),
@@ -295,6 +305,44 @@ export default function Assets() {
     }
   };
 
+  const handleApproveAsset = async (asset) => {
+    if (!canDeactivateAssetByRole) {
+      toast({ title: "Không có quyền", description: "Chỉ admin mới được duyệt.", status: "warning", duration: 2500, isClosable: true });
+      throw new Error("Permission denied");
+    }
+    try {
+      setApprovingId(asset.id);
+      await approveAsset(asset.id);
+      await fetchAssets();
+      toast({ title: "Đã duyệt", description: "Lô tài sản đã được duyệt và kích hoạt.", status: "success", duration: 2500, isClosable: true });
+    } catch (error) {
+      if (isUnauthorizedError(error)) { handleUnauthorized(); throw error; }
+      toast({ title: "Duyệt thất bại", description: error.message || "Không thể duyệt tài sản.", status: "error", duration: 3000, isClosable: true });
+      throw error;
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleRejectAsset = async (asset) => {
+    if (!canDeactivateAssetByRole) {
+      toast({ title: "Không có quyền", description: "Chỉ admin mới được từ chối.", status: "warning", duration: 2500, isClosable: true });
+      throw new Error("Permission denied");
+    }
+    try {
+      setRejectingId(asset.id);
+      await rejectAsset(asset.id);
+      await fetchAssets();
+      toast({ title: "Đã từ chối", description: "Yêu cầu tài sản đã bị từ chối.", status: "info", duration: 2500, isClosable: true });
+    } catch (error) {
+      if (isUnauthorizedError(error)) { handleUnauthorized(); throw error; }
+      toast({ title: "Thao tác thất bại", description: error.message || "Không thể từ chối.", status: "error", duration: 3000, isClosable: true });
+      throw error;
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
   const handleDeactivateAsset = async (asset) => {
     if (!canDeactivateAssetByRole) {
       toast({
@@ -359,25 +407,18 @@ export default function Assets() {
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <ColumnsTable
         tableData={tableData}
-        title="Quản lý tài sản"
+        title="Quản lý lô tài sản"
         departmentOptions={departmentOptions}
         userOptions={userOptions}
         canManageAssets={canManageAssets}
         canDeactivateAssetByRole={canDeactivateAssetByRole}
         currentUserRole={currentUserRole}
         loading={loading}
-        onSaveAsset={{
-          handler: handleSaveAsset,
-          loadingId: savingId,
-        }}
-        onDeactivateAsset={{
-          handler: handleDeactivateAsset,
-          loadingId: deactivatingId,
-        }}
-        onCreateAsset={{
-          handler: handleCreateAsset,
-          loading: creating,
-        }}
+        onSaveAsset={{ handler: handleSaveAsset, loadingId: savingId }}
+        onDeactivateAsset={{ handler: handleDeactivateAsset, loadingId: deactivatingId }}
+        onCreateAsset={{ handler: handleCreateAsset, loading: creating }}
+        onApproveAsset={{ handler: handleApproveAsset, loadingId: approvingId }}
+        onRejectAsset={{ handler: handleRejectAsset, loadingId: rejectingId }}
       />
     </Box>
   );

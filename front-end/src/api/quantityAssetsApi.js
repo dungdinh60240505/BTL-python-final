@@ -2,7 +2,7 @@ import { apiRequest, buildQueryString } from "./http";
 
 export function listAssets(params = {}) {
   const query = buildQueryString(params);
-  return apiRequest(`/assets-quantitíe${query}`, {
+  return apiRequest(`/asset-quantities${query}`, {
     method: "GET",
     auth: true,
     fallbackErrorMessage: "Không tải được danh sách tài sản.",
@@ -10,7 +10,7 @@ export function listAssets(params = {}) {
 }
 
 export function getAssetById(assetId) {
-  return apiRequest(`/assets-quantities/${assetId}`, {
+  return apiRequest(`/asset-quantities/${assetId}`, {
     method: "GET",
     auth: true,
     fallbackErrorMessage: "Không tải được thông tin tài sản.",
@@ -18,7 +18,7 @@ export function getAssetById(assetId) {
 }
 
 export function createAsset(payload) {
-  return apiRequest("/assets-quantities", {
+  return apiRequest("/asset-quantities", {
     method: "POST",
     auth: true,
     body: payload,
@@ -27,7 +27,7 @@ export function createAsset(payload) {
 }
 
 export function updateAsset(assetId, payload) {
-  return apiRequest(`/assets-quantities/${assetId}`, {
+  return apiRequest(`/asset-quantities/${assetId}`, {
     method: "PUT",
     auth: true,
     body: payload,
@@ -36,7 +36,7 @@ export function updateAsset(assetId, payload) {
 }
 
 export function updateAssetStatus(assetId, payload) {
-  return apiRequest(`/assets-quantities/${assetId}/status`, {
+  return apiRequest(`/asset-quantities/${assetId}/status`, {
     method: "PATCH",
     auth: true,
     body: payload,
@@ -44,10 +44,68 @@ export function updateAssetStatus(assetId, payload) {
   });
 }
 
+export function approveAsset(assetId) {
+  return apiRequest(`/asset-quantities/${assetId}/approve`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Duyệt tài sản thất bại.",
+  });
+}
+
+export function rejectAsset(assetId) {
+  return apiRequest(`/asset-quantities/${assetId}/reject`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Từ chối tài sản thất bại.",
+  });
+}
+
 export function deactivateAsset(assetId) {
-  return apiRequest(`/assets-quantities/${assetId}/deactivate`, {
+  return apiRequest(`/asset-quantities/${assetId}/deactivate`, {
     method: "PATCH",
     auth: true,
     fallbackErrorMessage: "Vô hiệu hóa tài sản thất bại.",
+  });
+}
+
+export function listLocations(assetId) {
+  return apiRequest(`/asset-quantities/${assetId}/locations`, {
+    method: "GET",
+    auth: true,
+    fallbackErrorMessage: "Không tải được danh sách vị trí.",
+  });
+}
+
+export function createLocation(assetId, payload) {
+  return apiRequest(`/asset-quantities/${assetId}/locations`, {
+    method: "POST",
+    auth: true,
+    body: payload,
+    fallbackErrorMessage: "Thêm vị trí thất bại.",
+  });
+}
+
+export function updateLocation(assetId, locationId, payload) {
+  return apiRequest(`/asset-quantities/${assetId}/locations/${locationId}`, {
+    method: "PUT",
+    auth: true,
+    body: payload,
+    fallbackErrorMessage: "Cập nhật vị trí thất bại.",
+  });
+}
+
+export function approveLocation(assetId, locationId) {
+  return apiRequest(`/asset-quantities/${assetId}/locations/${locationId}`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Xác nhận vị trí thất bại.",
+  });
+}
+
+export function deleteLocation(assetId, locationId) {
+  return apiRequest(`/asset-quantities/${assetId}/locations/${locationId}`, {
+    method: "DELETE",
+    auth: true,
+    fallbackErrorMessage: "Xóa vị trí thất bại.",
   });
 }

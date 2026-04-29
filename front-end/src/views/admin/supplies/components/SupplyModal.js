@@ -56,9 +56,11 @@ export default function SupplyModal(props) {
     isOpen,
     isSubmitting,
     isDeactivating,
+    isActivating,
     isUpdatingStock,
     onClose,
     onDeactivate,
+    onActivate,
     onSave,
     onUpdateStock,
     mode = "edit",
@@ -103,7 +105,7 @@ export default function SupplyModal(props) {
       description: supply.description || "",
       note: supply.note || "",
       managed_department_id: supply.managed_department_id ?? "",
-      is_active: supply.is_active ?? true,
+      is_active: supply.is_active ?? false,
     });
 
     setStockForm({
@@ -580,7 +582,7 @@ export default function SupplyModal(props) {
                 </Button>
               ) : null}
 
-              {canDeactivateSupplyByRole && supply?.is_active ? (
+              {canDeactivateSupplyByRole && (supply?.is_active ? (
                 <Button
                   colorScheme="red"
                   variant="outline"
@@ -589,7 +591,16 @@ export default function SupplyModal(props) {
                 >
                   Vô hiệu hóa
                 </Button>
-              ) : null}
+              ) : (
+                <Button
+                  colorScheme="green"
+                  variant="outline"
+                  onClick={() => onActivate?.(supply)}
+                  isLoading={isActivating}
+                >
+                  Kích hoạt
+                </Button>
+              ))}
 
               <Button
                 colorScheme="blue"

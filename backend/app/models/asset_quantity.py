@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
+from enum import Enum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -23,18 +24,27 @@ from app.models.asset import AssetCondition, AssetStatus
 
 if TYPE_CHECKING:
     from app.models.department import Department
+    from app.models.location_quantity_asset import LocationQuantityAsset
     from app.models.user import User
 
 
+class QuantityAssetApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class AssetQuantity(Base):
-    """Asset managed by quantity (no asset_code)."""
+    """Asset managed by quantity ."""
 
     __tablename__ = "quantity_assets"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    code: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     available_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    useful_life: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     category: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
     serial_number: Mapped[str | None] = mapped_column(String(100), nullable=True)
     specification: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -69,6 +79,19 @@ class AssetQuantity(Base):
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
+    approval_status: Mapped[QuantityAssetApprovalStatus] = mapped_column(
+        SqlEnum(
+            QuantityAssetApprovalStatus,
+            name="quantity_asset_approval_status",
+            values_callable=lambda enum_cls: [e.value for e in enum_cls],
+            native_enum=False,
+            validate_strings=True,
+        ),
+        default=QuantityAssetApprovalStatus.PENDING,
+        nullable=False,
+    )
+    required_quantity_category: Mapped[int] = mapped_column(Integer, default=200, nullable=False)
+
     assigned_department_id: Mapped[int | None] = mapped_column(
         ForeignKey("departments.id", ondelete="SET NULL"),
         nullable=True,
@@ -92,6 +115,9 @@ class AssetQuantity(Base):
 
     assigned_department: Mapped["Department | None"] = relationship("Department")
     assigned_user: Mapped["User | None"] = relationship("User")
+    locations: Mapped[list["LocationQuantityAsset"]] = relationship(
+        "LocationQuantityAsset", back_populates="quantity_asset", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return (

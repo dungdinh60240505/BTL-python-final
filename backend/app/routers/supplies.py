@@ -15,6 +15,7 @@ from app.schemas.supply import (
 from app.services.supply_service import (
     create_supply,
     deactivate_supply,
+    activate_supply,
     get_supply_or_404,
     list_supplies,
     update_supply,
@@ -105,3 +106,12 @@ def deactivate_existing_supply(
 ):
     supply = get_supply_or_404(db=db, supply_id=supply_id)
     return deactivate_supply(db=db, supply=supply)
+
+@router.patch("/{supply_id}/activate", response_model=SupplyResponse)
+def activate_existing_supply(
+    supply_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    supply = get_supply_or_404(db=db, supply_id=supply_id)
+    return activate_supply(db=db, supply=supply)

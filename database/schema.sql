@@ -8,12 +8,14 @@ DROP VIEW IF EXISTS vw_asset_status_summary;
 
 DROP TABLE IF EXISTS maintenances;
 DROP TABLE IF EXISTS allocations;
+DROP TABLE IF EXISTS location_quantity_assets;
 DROP TABLE IF EXISTS assets;
 DROP TABLE IF EXISTS asset_quantities;
 DROP TABLE IF EXISTS quantity_assets;
 DROP TABLE IF EXISTS supplies;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS departments;
+
 
 CREATE TABLE departments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,6 +59,7 @@ CREATE TABLE assets (
     location VARCHAR(255),
     note TEXT,
     is_active BOOLEAN NOT NULL DEFAULT 1,
+    required_quantity_category INTEGER NOT NULL DEFAULT 5,
     assigned_department_id INTEGER,
     assigned_user_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -68,6 +71,7 @@ CREATE TABLE assets (
 CREATE TABLE quantity_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
+    code VARCHAR(10) NOT NULL UNIQUE,
     quantity INTEGER NOT NULL DEFAULT 0 CHECK ( quantity >= 0),
     available_quantity INTEGER NOT NULL DEFAULT 0 CHECK (available_quantity >= 0 AND available_quantity <= quantity),
     category VARCHAR(100) NOT NULL,
@@ -81,6 +85,9 @@ CREATE TABLE quantity_assets (
     location VARCHAR(255),
     note TEXT,
     is_active BOOLEAN NOT NULL DEFAULT 1,
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+    required_quantity_category INTEGER NOT NULL DEFAULT 200,
     assigned_department_id INTEGER,
     assigned_user_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -89,6 +96,16 @@ CREATE TABLE quantity_assets (
     FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
+CREATE TABLE location_quantity_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_code VARCHAR(50) NOT NULL DEFAULT 'KHO',
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    used INTEGER NOT NULL DEFAULT 0 CHECK (used >= 0),
+    status_approval VARCHAR(30) NOT NULL DEFAULT 'pending'
+        CHECK (status_approval IN ('not_approval', 'pending', 'approval')),
+    quantity_assets_id INTEGER,
+    FOREIGN KEY (quantity_assets_id) REFERENCES quantity_assets(id) ON DELETE CASCADE
+);
 
 CREATE TABLE supplies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

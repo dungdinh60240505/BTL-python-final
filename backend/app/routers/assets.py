@@ -16,6 +16,7 @@ from app.schemas.asset import (
 from app.services.asset_service import (
     create_asset,
     deactivate_asset,
+    activate_asset,
     get_asset_or_404,
     list_assets,
     update_asset,
@@ -115,3 +116,12 @@ def deactivate_existing_asset(
 ):
     asset = get_asset_or_404(db=db, asset_id=asset_id)
     return deactivate_asset(db=db, asset=asset)
+
+@router.patch("/{asset_id}/activate", response_model=AssetResponse)
+def activate_existing_asset(
+    asset_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN))
+):
+    asset = get_asset_or_404(db=db, asset_id=asset_id)
+    return activate_asset(db=db, asset=asset)

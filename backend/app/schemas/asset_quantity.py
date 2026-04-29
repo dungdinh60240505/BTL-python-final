@@ -6,13 +6,15 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.asset import AssetCondition, AssetStatus
+from app.models.asset_quantity import QuantityAssetApprovalStatus
 from app.schemas.department import DepartmentSimple
+from app.schemas.location_quantity_asset import LocationQuantityAssetResponse
 from app.schemas.user import UserSimple
 
 
 class AssetQuantityBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
+    code: str = Field(min_length=2, max_length=255)
     name: str = Field(min_length=2, max_length=255)
     category: str = Field(min_length=2, max_length=100)
     quantity: int = Field(default=0, ge=0)
@@ -20,6 +22,7 @@ class AssetQuantityBase(BaseModel):
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
+    useful_life: int | None = Field(default=None, ge=0)
     purchase_cost: Decimal | None = Field(default=None, ge=0)
     status: AssetStatus = AssetStatus.AVAILABLE
     condition: AssetCondition = AssetCondition.GOOD
@@ -28,6 +31,7 @@ class AssetQuantityBase(BaseModel):
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool = True
+    required_quantity_category: int = Field(default=200, ge=0)
 
 
 class AssetQuantityCreate(AssetQuantityBase):
@@ -36,7 +40,7 @@ class AssetQuantityCreate(AssetQuantityBase):
 
 class AssetQuantityUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-
+    code: str | None = Field(default=None, min_length=2, max_length=255)
     name: str | None = Field(default=None, min_length=2, max_length=255)
     category: str | None = Field(default=None, min_length=2, max_length=100)
     quantity: int | None = Field(default=None, ge=0)
@@ -44,6 +48,7 @@ class AssetQuantityUpdate(BaseModel):
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
+    useful_life: int | None = Field(default=None, ge=0)
     purchase_cost: Decimal | None = Field(default=None, ge=0)
     status: AssetStatus | None = None
     condition: AssetCondition | None = None
@@ -52,6 +57,7 @@ class AssetQuantityUpdate(BaseModel):
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
+    required_quantity_category: int | None = Field(default=None, ge=0)
 
 
 class AssetQuantityResponse(BaseModel):
@@ -59,12 +65,14 @@ class AssetQuantityResponse(BaseModel):
 
     id: int
     name: str
+    code: str
     category: str
     quantity: int
     available_quantity: int
     serial_number: str | None = None
     specification: str | None = None
     purchase_date: date | None = None
+    useful_life: int | None = None
     purchase_cost: Decimal | None = None
     status: AssetStatus
     condition: AssetCondition
@@ -75,6 +83,9 @@ class AssetQuantityResponse(BaseModel):
     assigned_department: DepartmentSimple | None = None
     assigned_user: UserSimple | None = None
     is_active: bool
+    approval_status: QuantityAssetApprovalStatus
+    required_quantity_category: int
+    locations: list[LocationQuantityAssetResponse] = []
     created_at: datetime
     updated_at: datetime
 

@@ -1,27 +1,37 @@
+PRAGMA foreign_keys = OFF;
+
+-- Xoá dữ liệu cũ (đúng thứ tự tránh lỗi FK)
+DELETE FROM maintenances;
+DELETE FROM allocations;
+DELETE FROM supplies;
+DELETE FROM assets;
+DELETE FROM departments;
+
 PRAGMA foreign_keys = ON;
 
 INSERT INTO departments (code, name, description, is_active)
 VALUES
-    ('HCQT', 'Phong Hanh chinh Quan tri', 'Quan ly tai san va vat tu toan hoc vien', 1),
-    ('CNTT', 'Trung tam Cong nghe thong tin', 'Quan tri ha tang va thiet bi cong nghe', 1),
-    ('LAB', 'Phong Thi nghiem', 'Quan ly vat tu va thiet bi phong lab', 1),
-    ('DT', 'Phong Dao tao', 'Quan ly giang duong va lich hoc', 1),
-    ('KT', 'Phong Ke toan', 'Theo doi tai chinh va mua sam', 1);
+    ('HCQT1', 'Phong Hanh chinh Quan tri', 'Quan ly tai san va vat tu toan hoc vien', 1),
+    ('CNTT1', 'Trung tam Cong nghe thong tin', 'Quan tri ha tang va thiet bi cong nghe', 1),
+    ('LAB1', 'Phong Thi nghiem', 'Quan ly vat tu va thiet bi phong lab', 1),
+    ('DT1', 'Phong Dao tao', 'Quan ly giang duong va lich hoc', 1),
+    ('KT1', 'Phong Ke toan', 'Theo doi tai chinh va mua sam', 1);
 
-INSERT INTO users (username, email, full_name, hashed_password, phone_number, role, is_active, department_id)
+INSERT INTO users (username, email, full_name, hashed_password, phone_number, role, is_active, must_change_password, department_id)
 VALUES
-    ('admin', 'admin@ptit.edu.vn', 'System Administrator', '$argon2id$v=19$m=65536,t=3,p=4$7yoyWi3UxMnwCf5SkoyevQ$UZcoFT0rMMP/IVQPYAZ+LHZa6f3+FKhCyxu3mamydKM', '0901000001', 'admin', 1, 1),
-    ('manager', 'manager@ptit.edu.vn', 'Asset Manager', '$argon2id$v=19$m=65536,t=3,p=4$EdabqWNfg0rbakPxLXNDKQ$oG9Wn0lu46Vb5M/STuqlZz4FGWo30xErY/pPYfzfOPg', '0901000002', 'manager', 1, 2),
-    ('staff01', 'staff01@ptit.edu.vn', 'Nguyen Van A', '$argon2id$v=19$m=65536,t=3,p=4$EdabqWNfg0rbakPxLXNDKQ$oG9Wn0lu46Vb5M/STuqlZz4FGWo30xErY/pPYfzfOPg', '0901000003', 'staff', 1, 4);
+    ---('admin', 'admin@ptit.edu.vn', 'System Administrator', '$argon2id$v=19$m=65536,t=3,p=4$7yoyWi3UxMnwCf5SkoyevQ$UZcoFT0rMMP/IVQPYAZ+LHZa6f3+FKhCyxu3mamydKM', '0901000001', 'admin', 1, 1, 1),
+    ('manager', 'manager@ptit.edu.vn', 'Asset Manager 1', '$argon2id$v=19$m=65536,t=3,p=4$EdabqWNfg0rbakPxLXNDKQ$oG9Wn0lu46Vb5M/STuqlZz4FGWo30xErY/pPYfzfOPg', '0901000002', 'manager', 1, 0, 2),
+    ('staff01', 'staff01@ptit.edu.vn', 'Nguyen Van A', '$argon2id$v=19$m=65536,t=3,p=4$EdabqWNfg0rbakPxLXNDKQ$oG9Wn0lu46Vb5M/STuqlZz4FGWo30xErY/pPYfzfOPg', '0901000003', 'staff', 1, 0, 4),
+    ('staff02', 'staff02@ptit.edu.vn', 'Nguyen Van B', '$argon2id$v=19$m=65536,t=3,p=4$EdabqWNfg0rbakPxLXNDKQ$oG9Wn0lu46Vb5M/STuqlZz4FGWo30xErY/pPYfzfOPg', '0901000004', 'staff', 1, 0, 4);
 
 INSERT INTO assets (
-    asset_code, name, category, serial_number, specification, purchase_date, purchase_cost,
+    asset_code, name, required_quantity_category, category, serial_number, specification, purchase_date, purchase_cost,
     status, condition, location, note, is_active, assigned_department_id, assigned_user_id
 )
 VALUES
-    ('TS001', 'Dell Latitude 5440', 'Laptop', 'DL5440PTIT001', 'Core i7, 16GB RAM, 512GB SSD', '2025-01-15', 23500000, 'available', 'new', 'Kho CNTT', 'San sang cap phat', 1, 2, 2),
-    ('TS002', 'May chieu Epson EB-X06', 'Projector', 'EPSONX06002', 'XGA, 3600 lumens', '2024-09-01', 12500000, 'available', 'good', 'Giang duong A2', 'Se duoc cap phat cho phong dao tao', 1, 4, 3),
-    ('TS003', 'May in HP LaserJet Pro', 'Printer', 'HPLJPRO003', 'In den trang, ket noi LAN', '2024-06-20', 6800000, 'available', 'fair', 'Phong Hanh chinh Quan tri', 'Cho lap lich bao tri', 1, 1, 1);
+    ('TS001', 'Dell Latitude 5440', 5, 'Laptop', 'DL5440PTIT001', 'Core i7, 16GB RAM, 512GB SSD', '2025-01-15', 23500000, 'available', 'new', 'Kho CNTT', 'San sang cap phat', 1, 2, 2),
+    ('TS002', 'May chieu Epson EB-X06', 5, 'Projector', 'EPSONX06002', 'XGA, 3600 lumens', '2024-09-01', 12500000, 'available', 'good', 'Giang duong A2', 'Se duoc cap phat cho phong dao tao', 1, 4, 3),
+    ('TS003', 'May in HP LaserJet Pro', 5, 'Printer', 'HPLJPRO003', 'In den trang, ket noi LAN', '2024-06-20', 6800000, 'available', 'fair', 'Phong Hanh chinh Quan tri', 'Cho lap lich bao tri', 1, 1, 1);
 
 INSERT INTO supplies (
     supply_code, name, category, unit, quantity_in_stock, minimum_stock_level, unit_price, location, description, note, managed_department_id, is_active

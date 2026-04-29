@@ -172,6 +172,7 @@ def create_asset(db: Session, payload: AssetCreate) -> Asset:
         if payload.specification
         else None,
         purchase_date=payload.purchase_date,
+        useful_life=payload.useful_life,
         purchase_cost=payload.purchase_cost,
         status=payload.status,
         condition=payload.condition,
@@ -242,6 +243,9 @@ def update_asset(db: Session, asset: Asset, payload: AssetUpdate) -> Asset:
 
     if "purchase_date" in update_data:
         asset.purchase_date = update_data["purchase_date"]
+
+    if "useful_life" in update_data:
+        asset.useful_life = update_data["useful_life"]
 
     if "purchase_cost" in update_data:
         asset.purchase_cost = update_data["purchase_cost"]
@@ -316,6 +320,14 @@ def update_asset_status(
 
 def deactivate_asset(db: Session, asset: Asset) -> Asset:
     asset.is_active = False
+    db.add(asset)
+    db.commit()
+    db.refresh(asset)
+
+    return get_asset_or_404(db=db, asset_id=asset.id)
+
+def activate_asset(db: Session, asset: Asset) -> Asset:
+    asset.is_active = True
     db.add(asset)
     db.commit()
     db.refresh(asset)

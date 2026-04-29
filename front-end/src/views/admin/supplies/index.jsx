@@ -8,6 +8,7 @@ import { isUnauthorizedError } from "api/http";
 import {
   createSupply,
   deactivateSupply,
+  activateSupply,
   listSupplies,
   updateSupply,
   updateSupplyStock,
@@ -76,6 +77,7 @@ export default function Supplies() {
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
   const [deactivatingId, setDeactivatingId] = React.useState(null);
+  const [activatingId, setActivatingId] = React.useState(null);
   const [stockUpdatingId, setStockUpdatingId] = React.useState(null);
   const [currentUserRole, setCurrentUserRole] = React.useState("");
 
@@ -181,7 +183,7 @@ export default function Supplies() {
       description: normalizeNullableText(supply.description),
       note: normalizeNullableText(supply.note),
       managed_department_id: normalizeNullableId(supply.managed_department_id),
-      is_active: supply.is_active ?? true,
+      is_active: false,
     };
   };
 
@@ -343,6 +345,66 @@ export default function Supplies() {
     }
   };
 
+  const handleActivateSupply = async (supply) => {
+    if (!canDeactivateSupplyByRole) {
+      toast({
+        title: "Không có quyền",
+        description: "Chỉ admin mới được kích hoạt vật tư.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      throw new Error("Quyền bị hạn chế");
+    }
+
+    if (!supply?.id) {
+      throw new Error("Thiếu id vật tư.");
+    }
+
+    if (supply.is_active) {
+      toast({
+        title: "Không hợp lệ",
+        description: "Vật tư này đã ở trạng thái active.",
+        status: "info",
+        duration: 2200,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setActivatingId(supply.id);
+      await activateSupply(supply.id);
+      await fetchSupplies();
+
+      toast({
+        title: "Đã kích hoạt",
+        description: "Vật tư đã được chuyển sang active.",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Activate supply failed:", error);
+
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+        throw error;
+      }
+
+      toast({
+        title: "Thao tác thất bại",
+        description: error.message || "Không thể kích hoạt vật tư.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      throw error;
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   const handleUpdateStock = async ({ id, quantity_change, note }) => {
     if (!canUpdateStock) {
       toast({
@@ -431,6 +493,10 @@ export default function Supplies() {
         onDeactivateSupply={{
           handler: handleDeactivateSupply,
           loadingId: deactivatingId,
+        }}
+        onActivateSupply={{
+          handler: handleActivateSupply,
+          loadingId: activatingId
         }}
         onCreateSupply={{
           handler: handleCreateSupply,

@@ -26,6 +26,7 @@ import { getCurrentUser, logout } from "api/authApi";
 const STAFF_ALLOWED_ADMIN_PATHS = new Set([
   "/default",
   "/assets-tables",
+  "/quantity-assets-tables",
   "/supplies-tables",
   "/allocations",
   "/maintenance",

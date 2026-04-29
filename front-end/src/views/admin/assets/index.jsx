@@ -8,6 +8,7 @@ import { isUnauthorizedError } from "api/http";
 import {
   createAsset,
   deactivateAsset,
+  activateAsset,
   listAssets,
   updateAsset,
 } from "api/assetsApi";
@@ -36,6 +37,7 @@ function mapAssetToRow(item, index) {
     serial_number: item.serial_number || "",
     specification: item.specification || "",
     purchase_date: item.purchase_date || "",
+    useful_life: item.useful_life || 0,
     purchase_cost: formatCurrencyValue(item.purchase_cost),
     status: item.status || "available",
     condition: item.condition || "good",
@@ -79,12 +81,12 @@ export default function Assets() {
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
   const [deactivatingId, setDeactivatingId] = React.useState(null);
+  const [activatingId, setActivatingId] = React.useState(null);
   const [currentUserRole, setCurrentUserRole] = React.useState("");
 
   const canManageAssets =
     currentUserRole === "admin" || currentUserRole === "manager";
   const canDeactivateAssetByRole = currentUserRole === "admin";
-
   const handleUnauthorized = React.useCallback(() => {
     logout();
 
@@ -101,7 +103,7 @@ export default function Assets() {
 
   const fetchAssets = React.useCallback(async () => {
     const assets = await listAssets({ limit: 200 });
-
+    console.log(assets);
     setTableData(
       [...assets]
         .sort((a, b) => a.id - b.id)
@@ -187,6 +189,7 @@ export default function Assets() {
       serial_number: normalizeNullableText(asset.serial_number),
       specification: normalizeNullableText(asset.specification),
       purchase_date: normalizeNullableText(asset.purchase_date),
+      useful_life: normalizeNullableNumber(asset.useful_life),
       purchase_cost: normalizeNullableNumber(asset.purchase_cost),
       status: String(asset.status || "available").trim(),
       condition: String(asset.condition || "good").trim(),
@@ -194,7 +197,7 @@ export default function Assets() {
       note: normalizeNullableText(asset.note),
       assigned_department_id: normalizeNullableId(asset.assigned_department_id),
       assigned_user_id: normalizeNullableId(asset.assigned_user_id),
-      is_active: asset.is_active ?? true,
+      is_active: asset.is_active ?? false,//null hoặc undefined thì mới trả false
     };
   };
 
@@ -218,6 +221,7 @@ export default function Assets() {
       setSavingId(asset.id);
 
       const payload = buildAssetPayload(asset);
+      console.log("Dữ liệu asset update:", payload);
       await updateAsset(asset.id, payload);
       await fetchAssets();
 
@@ -356,6 +360,67 @@ export default function Assets() {
     }
   };
 
+  const handleActivateAsset = async (asset) => {
+    console.log("Bạn vừa bấm kích hoạt!")
+    if (!canDeactivateAssetByRole) {
+      toast({
+        title: "Không có quyền",
+        description: "Chỉ admin mới được kích hoạt tài sản.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      throw new Error("Quyền bị hạn chế!");
+    }
+
+    if (!asset?.id) {
+      throw new Error("Thiếu id tài sản.");
+    }
+
+    if (asset.is_active) {
+      toast({
+        title: "Không hợp lệ",
+        description: "Tài sản này đã ở trạng thái đã kích hoạt.",
+        status: "info",
+        duration: 2200,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setActivatingId(asset.id);
+      await activateAsset(asset.id);
+      await fetchAssets();
+
+      toast({
+        title: "Đã kích hoạt",
+        description: "Tài sản đã được chuyển sang active.",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Active asset failed:", error);
+
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+        throw error;
+      }
+
+      toast({
+        title: "Thao tác thất bại",
+        description: error.message || "Không thể kích hoạt tài sản.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      throw error;
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <ColumnsTable
@@ -375,10 +440,16 @@ export default function Assets() {
           handler: handleDeactivateAsset,
           loadingId: deactivatingId,
         }}
+
+        onActivateAsset={{
+          handler: handleActivateAsset,
+          loadingId: activatingId,
+        }}
         onCreateAsset={{
           handler: handleCreateAsset,
           loading: creating,
         }}
+        addLabel={ currentUserRole==="admin" ? "Thêm tài sản" : "Yêu cầu thêm tài sản"}
       />
     </Box>
   );

@@ -267,6 +267,14 @@ def deactivate_supply(db: Session, supply: Supply) -> Supply:
 
     return get_supply_or_404(db=db, supply_id=supply.id)
 
+def activate_supply(db: Session, supply: Supply) -> Supply:
+    supply.is_active = True
+    db.add(supply)
+    db.commit()
+    db.refresh(supply)
+
+    return get_supply_or_404(db=db, supply_id=supply.id)
+
 
 def get_supply_or_404(
     db: Session,

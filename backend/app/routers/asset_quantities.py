@@ -13,13 +13,27 @@ from app.schemas.asset_quantity import (
     AssetQuantityStatusUpdate,
     AssetQuantityUpdate,
 )
+from app.schemas.location_quantity_asset import (
+    LocationQuantityAssetCreate,
+    LocationQuantityAssetResponse,
+    LocationQuantityAssetUpdate,
+)
 from app.services.asset_quantity_service import (
+    approve_asset_quantity,
     create_asset_quantity,
     deactivate_asset_quantity,
     get_asset_quantity_or_404,
     list_asset_quantities,
+    reject_asset_quantity,
     update_asset_quantity,
     update_asset_quantity_status,
+)
+from app.services.location_quantity_asset_service import (
+    create_location,
+    delete_location,
+    list_locations,
+    update_location,
+    approve_location_service
 )
 
 router = APIRouter(prefix="/asset-quantities", tags=["Asset Quantities"])
@@ -79,9 +93,9 @@ def read_asset_quantity(
 def create_new_asset_quantity(
     payload: AssetQuantityCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+    current_user: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
-    return create_asset_quantity(db=db, payload=payload)
+    return create_asset_quantity(db=db, payload=payload, current_user=current_user)
 
 
 @router.put("/{asset_quantity_id}", response_model=AssetQuantityResponse)
@@ -110,6 +124,26 @@ def update_existing_asset_quantity_status(
     )
 
 
+@router.patch("/{asset_quantity_id}/approve", response_model=AssetQuantityResponse)
+def approve_existing_asset_quantity(
+    asset_quantity_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    asset_quantity = get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return approve_asset_quantity(db=db, asset_quantity=asset_quantity)
+
+
+@router.patch("/{asset_quantity_id}/reject", response_model=AssetQuantityResponse)
+def reject_existing_asset_quantity(
+    asset_quantity_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    asset_quantity = get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return reject_asset_quantity(db=db, asset_quantity=asset_quantity)
+
+
 @router.patch("/{asset_quantity_id}/deactivate", response_model=AssetQuantityResponse)
 def deactivate_existing_asset_quantity(
     asset_quantity_id: int,
@@ -119,3 +153,76 @@ def deactivate_existing_asset_quantity(
     asset_quantity = get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
     return deactivate_asset_quantity(db=db, asset_quantity=asset_quantity)
 
+
+# ── Location endpoints ─────────────────────────────────────────────────────────
+
+@router.get("/{asset_quantity_id}/locations", response_model=list[LocationQuantityAssetResponse])
+def read_locations(
+    asset_quantity_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.STAFF)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return list_locations(db=db, quantity_assets_id=asset_quantity_id)
+
+
+@router.post(
+    "/{asset_quantity_id}/locations",
+    response_model=LocationQuantityAssetResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_location(
+    asset_quantity_id: int,
+    payload: LocationQuantityAssetCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return create_location(db=db, quantity_assets_id=asset_quantity_id, payload=payload)
+
+
+@router.put(
+    "/{asset_quantity_id}/locations/{location_id}",
+    response_model=LocationQuantityAssetResponse,
+)
+def edit_location(
+    asset_quantity_id: int,
+    location_id: int,
+    payload: LocationQuantityAssetUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return update_location(
+        db=db,
+        quantity_assets_id=asset_quantity_id,
+        location_id=location_id,
+        payload=payload,
+    )
+
+@router.patch(
+    "/{asset_quantity_id}/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def approve_location(
+    asset_quantity_id: int,
+    location_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return approve_location_service(
+        db=db,
+        quantity_assets_id=asset_quantity_id,
+        location_id=location_id,
+    )
+
+
+@router.delete("/{asset_quantity_id}/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_location(
+    asset_quantity_id: int,
+    location_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    delete_location(db=db, quantity_assets_id=asset_quantity_id, location_id=location_id)
