@@ -7,16 +7,20 @@ from sqlalchemy.orm import Session
 
 from app.models.allocation import Allocation, AllocationStatus
 from app.models.asset import Asset
+from app.models.asset_quantity import AssetQuantity, QuantityAssetApprovalStatus
 from app.models.department import Department
 from app.models.maintenance import Maintenance, MaintenanceStatus
 from app.models.supply import Supply
 from app.models.user import User
 from app.schemas.report import (
     AllocationStatusSummaryItem,
+    AssetsByDepartmentItem,
     AssetStatusSummaryItem,
     DashboardSummary,
     LowStockSupplyItem,
     MaintenanceStatusSummaryItem,
+    PendingApprovalItem,
+    QuantityAssetStatusSummaryItem,
     RecentActivityItem,
 )
 
@@ -53,6 +57,12 @@ def get_dashboard_summary(db: Session) -> DashboardSummary:
         )
     ) or 0
 
+    pending_quantity_assets = db.scalar(
+        select(func.count(AssetQuantity.id)).where(
+            AssetQuantity.approval_status == QuantityAssetApprovalStatus.PENDING,
+        )
+    ) or 0
+
     return DashboardSummary(
         generated_at=datetime.now(timezone.utc),
         total_departments=int(total_departments),
@@ -62,6 +72,7 @@ def get_dashboard_summary(db: Session) -> DashboardSummary:
         active_allocations=int(active_allocations),
         active_maintenances=int(active_maintenances),
         low_stock_supplies=int(low_stock_supplies),
+        pending_quantity_assets=int(pending_quantity_assets),
     )
 
 
@@ -359,3 +370,78 @@ def get_recent_activity(db: Session, *, limit: int = 10) -> list[RecentActivityI
     )
 
     return items[:limit]
+
+
+def get_quantity_asset_status_summary(
+    db: Session,
+) -> list[QuantityAssetStatusSummaryItem]:
+    rows = db.execute(
+        select(AssetQuantity.status, func.count(AssetQuantity.id))
+        .where(AssetQuantity.is_active.is_(True))
+        .group_by(AssetQuantity.status)
+        .order_by(AssetQuantity.status)
+    ).all()
+
+    return [
+        QuantityAssetStatusSummaryItem(
+            status=str(s.value if hasattr(s, "value") else s),
+            count=int(c),
+        )
+        for s, c in rows
+    ]
+
+
+def get_assets_by_department(db: Session) -> list[AssetsByDepartmentItem]:
+    asset_rows = db.execute(
+        select(Department.name, func.count(Asset.id))
+        .join(Asset, Asset.assigned_department_id == Department.id)
+        .where(Asset.is_active.is_(True))
+        .group_by(Department.id, Department.name)
+    ).all()
+
+    qty_rows = db.execute(
+        select(Department.name, func.count(AssetQuantity.id))
+        .join(AssetQuantity, AssetQuantity.assigned_department_id == Department.id)
+        .where(AssetQuantity.is_active.is_(True))
+        .group_by(Department.id, Department.name)
+    ).all()
+
+    dept_map: dict[str, dict[str, int]] = {}
+    for dept_name, count in asset_rows:
+        dept_map[dept_name] = {"asset_count": int(count), "quantity_asset_count": 0}
+    for dept_name, count in qty_rows:
+        if dept_name not in dept_map:
+            dept_map[dept_name] = {"asset_count": 0, "quantity_asset_count": 0}
+        dept_map[dept_name]["quantity_asset_count"] = int(count)
+
+    return [
+        AssetsByDepartmentItem(
+            department_name=name,
+            asset_count=vals["asset_count"],
+            quantity_asset_count=vals["quantity_asset_count"],
+        )
+        for name, vals in sorted(dept_map.items(), key=lambda kv: kv[0])
+    ]
+
+
+def get_pending_approvals(
+    db: Session, *, limit: int = 10
+) -> list[PendingApprovalItem]:
+    rows = db.scalars(
+        select(AssetQuantity)
+        .where(AssetQuantity.approval_status == QuantityAssetApprovalStatus.PENDING)
+        .order_by(AssetQuantity.created_at.desc())
+        .limit(limit)
+    ).all()
+
+    return [
+        PendingApprovalItem(
+            id=r.id,
+            code=r.code,
+            name=r.name,
+            category=r.category,
+            quantity=r.quantity,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]

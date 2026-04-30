@@ -58,25 +58,50 @@ export function getRecentActivity(params = {}) {
   });
 }
 
+export function getQuantityAssetStatusSummary() {
+  return apiRequest("/reports/quantity-asset-status-summary", {
+    method: "GET",
+    auth: true,
+    fallbackErrorMessage: "Không tải được trạng thái lô tài sản.",
+  });
+}
+
+export function getAssetsByDepartment() {
+  return apiRequest("/reports/assets-by-department", {
+    method: "GET",
+    auth: true,
+    fallbackErrorMessage: "Không tải được tài sản theo phòng ban.",
+  });
+}
+
+export function getPendingApprovals(params = {}) {
+  const query = buildQueryString(params);
+  return apiRequest(`/reports/pending-approvals${query}`, {
+    method: "GET",
+    auth: true,
+    fallbackErrorMessage: "Không tải được danh sách chờ duyệt.",
+  });
+}
+
 export async function getDashboardData(currentUserRole = "") {
   const normalizedRole = String(currentUserRole || "").trim().toLowerCase();
 
-  // Staff chỉ gọi dashboard rút gọn
   if (normalizedRole === "staff") {
     const summary = await getMyDashboardSummary();
-
     return {
       summary,
       assetStatusSummary: [],
+      quantityAssetStatusSummary: [],
       lowStockSupplies: [],
       allocationStatusSummary: [],
       maintenanceStatusSummary: [],
+      assetsByDepartment: [],
+      pendingApprovals: [],
       recentActivity: [],
       dashboardMode: "staff",
     };
   }
 
-  // Admin / Manager giữ dashboard đầy đủ như cũ
   const [
     summary,
     assetStatusSummary,
@@ -84,21 +109,30 @@ export async function getDashboardData(currentUserRole = "") {
     allocationStatusSummary,
     maintenanceStatusSummary,
     recentActivity,
+    quantityAssetStatusSummary,
+    assetsByDepartment,
+    pendingApprovals,
   ] = await Promise.all([
     getDashboardSummary(),
     getAssetStatusSummary(),
     getLowStockSupplies(),
     getAllocationStatusSummary(),
     getMaintenanceStatusSummary(),
-    getRecentActivity({ limit: 8 }),
+    getRecentActivity({ limit: 12 }),
+    getQuantityAssetStatusSummary(),
+    getAssetsByDepartment(),
+    getPendingApprovals({ limit: 10 }),
   ]);
 
   return {
     summary,
     assetStatusSummary,
+    quantityAssetStatusSummary,
     lowStockSupplies,
     allocationStatusSummary,
     maintenanceStatusSummary,
+    assetsByDepartment,
+    pendingApprovals,
     recentActivity,
     dashboardMode: "full",
   };

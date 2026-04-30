@@ -21,6 +21,7 @@ class DashboardSummary(BaseModel):
     active_allocations: int
     active_maintenances: int
     low_stock_supplies: int
+    pending_quantity_assets: int = 0
 
 
 class AssetStatusSummaryItem(BaseModel):
@@ -56,3 +57,23 @@ class RecentActivityItem(BaseModel):
     title: str
     status: str
     activity_date: datetime | date | None = None
+
+
+class QuantityAssetStatusSummaryItem(BaseModel):
+    status: str
+    count: int
+
+
+class AssetsByDepartmentItem(BaseModel):
+    department_name: str
+    asset_count: int
+    quantity_asset_count: int
+
+
+class PendingApprovalItem(BaseModel):
+    id: int
+    code: str
+    name: str
+    category: str
+    quantity: int
+    created_at: datetime
