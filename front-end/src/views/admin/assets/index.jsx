@@ -210,11 +210,16 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!asset?.id) {
-      throw new Error("Thiếu id tài sản để cập nhật.");
+      toast({
+        title: "Thiếu id tài sản",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -237,7 +242,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -247,7 +251,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -262,7 +265,6 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -284,7 +286,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -294,7 +295,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }
@@ -309,11 +309,16 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!asset?.id) {
-      throw new Error("Thiếu id tài sản.");
+      toast({
+        title: "Thiếu id tài sản",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (!asset.is_active) {
@@ -344,7 +349,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -354,7 +358,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setDeactivatingId(null);
     }
@@ -370,11 +373,16 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Quyền bị hạn chế!");
     }
 
     if (!asset?.id) {
-      throw new Error("Thiếu id tài sản.");
+      toast({
+        title: "Thiếu id tài sản",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (asset.is_active) {
@@ -405,7 +413,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -415,7 +422,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setActivatingId(null);
     }

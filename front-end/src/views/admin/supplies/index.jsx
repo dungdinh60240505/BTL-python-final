@@ -196,11 +196,16 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!supply?.id) {
-      throw new Error("Thiếu id vật tư để cập nhật.");
+      toast({
+        title: "Thiếu id vật tư",
+        description: "Chỉ admin mới được kích hoạt tài sản.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -222,7 +227,6 @@ export default function Supplies() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -232,7 +236,6 @@ export default function Supplies() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -247,7 +250,6 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -269,7 +271,6 @@ export default function Supplies() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -279,7 +280,6 @@ export default function Supplies() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }
@@ -294,11 +294,16 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!supply?.id) {
-      throw new Error("Thiếu id vật tư.");
+      toast({
+        title: "Thiếu id vật tư",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (!supply.is_active) {
@@ -329,7 +334,6 @@ export default function Supplies() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -339,7 +343,6 @@ export default function Supplies() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setDeactivatingId(null);
     }
@@ -354,11 +357,16 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Quyền bị hạn chế");
     }
 
     if (!supply?.id) {
-      throw new Error("Thiếu id vật tư.");
+      toast({
+        title: "Thiếu id vật tư",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (supply.is_active) {
@@ -389,7 +397,6 @@ export default function Supplies() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -399,7 +406,6 @@ export default function Supplies() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setActivatingId(null);
     }
@@ -414,11 +420,16 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!id) {
-      throw new Error("Thiếu id vật tư để cập nhật tồn kho.");
+      toast({
+        title: "Thiếu id vật tư",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     const parsedChange = Number(quantity_change);
@@ -431,7 +442,6 @@ export default function Supplies() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Invalid quantity_change");
     }
 
     try {
@@ -459,7 +469,6 @@ export default function Supplies() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -469,7 +478,6 @@ export default function Supplies() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setStockUpdatingId(null);
     }

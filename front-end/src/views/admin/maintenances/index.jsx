@@ -290,7 +290,6 @@ export default function Maintenances() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -314,7 +313,6 @@ export default function Maintenances() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -324,7 +322,7 @@ export default function Maintenances() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
+      
     } finally {
       setCreating(false);
     }
@@ -339,11 +337,16 @@ export default function Maintenances() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!maintenance?.id) {
-      throw new Error("Thiếu id maintenance để cập nhật.");
+      toast({
+        title: "Thiếu id bảo trì",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -365,7 +368,7 @@ export default function Maintenances() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
+        
       }
 
       toast({
@@ -375,7 +378,7 @@ export default function Maintenances() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
+      
     } finally {
       setSavingId(null);
     }
@@ -397,16 +400,27 @@ export default function Maintenances() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!id) {
-      throw new Error("Thiếu id maintenance.");
+      toast({
+        title: "Thiếu id bảo trì",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     const normalizedStatus = String(status || "").trim();
     if (!normalizedStatus) {
-      throw new Error("Status là bắt buộc.");
+      toast({
+        title: "Status là bắt buộc",
+        description: "Cần bổ sung thông tin status",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -433,7 +447,7 @@ export default function Maintenances() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
+        
       }
 
       toast({
@@ -444,7 +458,7 @@ export default function Maintenances() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
+      
     } finally {
       setStatusUpdatingId(null);
     }
@@ -459,11 +473,16 @@ export default function Maintenances() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!maintenance?.id) {
-      throw new Error("Thiếu id maintenance.");
+      toast({
+        title: "Thiếu id bảo trì",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (!maintenance.is_active) {
@@ -494,7 +513,7 @@ export default function Maintenances() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
+        
       }
 
       toast({
@@ -504,7 +523,7 @@ export default function Maintenances() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
+      
     } finally {
       setDeactivatingId(null);
     }

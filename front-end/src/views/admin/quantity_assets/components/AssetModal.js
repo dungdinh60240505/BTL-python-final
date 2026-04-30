@@ -67,6 +67,7 @@ const initialFormData = {
   available_quantity: 0,
   specification: "",
   purchase_date: "",
+  useful_life: 1,
   purchase_cost: "",
   status: "available",
   condition: "good",
@@ -298,7 +299,7 @@ export default function AssetModal(props) {
       category: asset.category || "",
       specification: asset.specification || "",
       purchase_date: asset.purchase_date || "",
-      useful_life: asset.useful_life || 0,
+      useful_life: asset.useful_life || 1,
       purchase_cost: asset.purchase_cost || "",
       status: asset.status || "available",
       condition: asset.condition || "good",
@@ -331,7 +332,7 @@ export default function AssetModal(props) {
       category: formData.category,
       specification: formData.specification,
       purchase_date: formData.purchase_date,
-      useful_life: formData.useful_life,
+      useful_life: formData.useful_life || 1,
       purchase_cost: formData.purchase_cost,
       status: formData.status,
       condition: formData.condition,
@@ -384,7 +385,7 @@ export default function AssetModal(props) {
                 <GridItem><FormControl><FormLabel>Danh mục</FormLabel><Input value={asset?.category || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Trạng thái</FormLabel><Input value={valueMap[asset.status] || "Không xác định"} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Số lượng</FormLabel><Input value={asset?.quantity || 0} {...readOnlyFieldProps} /></FormControl></GridItem>
-                <GridItem><FormControl><FormLabel>Có sẵn</FormLabel><Input value={asset?.available_quantity || 0} {...readOnlyFieldProps} /></FormControl></GridItem>
+                {/* <GridItem><FormControl><FormLabel>Có sẵn</FormLabel><Input value={asset?.available_quantity || 0} {...readOnlyFieldProps} /></FormControl></GridItem> */}
                 <GridItem><FormControl><FormLabel>Ngày mua</FormLabel><Input value={asset?.purchase_date || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Thời gian khấu hao (Tháng)</FormLabel><Input value={asset?.useful_life || 0} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Giá mua</FormLabel><Input value={asset?.purchase_cost || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
@@ -438,7 +439,8 @@ export default function AssetModal(props) {
                 <GridItem>
                   <FormControl isRequired>
                     <FormLabel>Mã lô</FormLabel>
-                    <Input value={formData.code} onChange={(e) => handleChange("code", e.target.value)} placeholder="VD: AS-001"  />
+                    <Input value={formData.code} onChange={(e) => handleChange("code", e.target.value)} placeholder="VD: QA-001"
+                    isDisabled={ isCreateMode ? false : true }  />
                   </FormControl>
                 </GridItem>
                 <GridItem>
@@ -450,7 +452,8 @@ export default function AssetModal(props) {
                 <GridItem>
                   <FormControl isRequired>
                     <FormLabel>Danh mục</FormLabel>
-                    <Input value={formData.category} onChange={(e) => handleChange("category", e.target.value)} placeholder="VD: Laptop, Printer"  />
+                    <Input value={formData.category} onChange={(e) => handleChange("category", e.target.value)} placeholder="VD: Laptop, Printer"
+                    isDisabled={ isCreateMode ? false : true }  />
                   </FormControl>
                 </GridItem>
                 <GridItem>
@@ -464,15 +467,22 @@ export default function AssetModal(props) {
                 <GridItem>
                   <FormControl isRequired>
                     <FormLabel>Số lượng</FormLabel>
-                    <Input type="number" min="0" value={formData.quantity} onChange={(e) => handleChange("quantity", e.target.value)}  />
+                    <Input 
+                      type="number" 
+                      min="0"
+                      step="1" 
+                      value={formData.quantity} 
+                      onChange={(e) => handleChange("quantity", e.target.value)}
+                      isDisabled={ isCreateMode ? false : true }
+                    />
                   </FormControl>
                 </GridItem>
-                <GridItem>
+                {/* <GridItem>
                   <FormControl isRequired>
                     <FormLabel>Có sẵn</FormLabel>
                     <Input type="number" min="0" value={formData.available_quantity} onChange={(e) => handleChange("available_quantity", e.target.value)}  />
                   </FormControl>
-                </GridItem>
+                </GridItem> */}
                 <GridItem>
                   <FormControl>
                     <FormLabel>Ngày mua</FormLabel>

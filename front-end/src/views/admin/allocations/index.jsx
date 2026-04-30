@@ -249,28 +249,58 @@ export default function Allocations() {
     const allocationType = String(allocation.allocation_type || "asset").trim();
 
     if (!allocationCode) {
-      throw new Error("Allocation code là bắt buộc.");
+      toast({
+        title: "Thiếu code bản cấp phát",
+        description: "Cần bổ sung thông tin code.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (allocationType !== "asset" && allocationType !== "supply") {
-      throw new Error("Allocation type không hợp lệ.");
+      toast({
+        title: "Kiểu cấp phát không hợp lệ",
+        description: "Có dữ liệu tài sản thì mới chọn được kiểu tài sản, tương tự với vật tư",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     // STAFF: chỉ được tạo request vật tư
     if (isStaff) {
       if (allocationType !== "supply") {
-        throw new Error("Staff chỉ được tạo đề nghị cấp phát vật tư.");
+        toast({
+        title: "Nhân viên chỉ được yêu cầu cấp phát vật tư",
+        description: "Chỉ admin hoặc quản lí tạo cấp phát tài sản.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       const supplyId = normalizeNullableId(allocation.supply_id);
       const quantity = normalizePositiveNumber(allocation.quantity, null);
 
       if (!supplyId) {
-        throw new Error("Bạn phải chọn supply.");
+        toast({
+        title: "Bạn phải chọn id vật tư",
+        description: "Thiếu thông tin id vật tư",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       if (!quantity || quantity <= 0) {
-        throw new Error("Quantity phải lớn hơn 0.");
+        toast({
+        title: "Số lượng phải lớn hơn 0",
+        description: "",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       return {
@@ -294,7 +324,13 @@ export default function Allocations() {
     const allocatedUserId = normalizeNullableId(allocation.allocated_user_id);
 
     if (!allocatedDepartmentId && !allocatedUserId) {
-      throw new Error("Bạn phải chọn ít nhất phòng ban hoặc người nhận.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Phải chọn ít nhất phòng ban hoặc người nhận",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     const payload = {
@@ -315,7 +351,13 @@ export default function Allocations() {
       const assetId = normalizeNullableId(allocation.asset_id);
 
       if (!assetId) {
-        throw new Error("Bạn phải chọn asset khi allocation_type là asset.");
+        toast({
+        title: "Thiếu thông tin",
+        description: "Phải chọn tài sản khi đã chọn kiểu tài sản.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       payload.asset_id = assetId;
@@ -325,11 +367,23 @@ export default function Allocations() {
       const quantity = normalizePositiveNumber(allocation.quantity, null);
 
       if (!supplyId) {
-        throw new Error("Bạn phải chọn supply khi allocation_type là supply.");
+        toast({
+        title: "Thiếu thông tin",
+        description: "Phải chọn vật tư khi đã chọn kiểu vật tư.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       if (!quantity || quantity <= 0) {
-        throw new Error("Quantity phải lớn hơn 0 với supply allocation.");
+        toast({
+        title: "Thiếu thông tin",
+        description: "Với kiểu vật tư, số lượng phải lớn hơn 0",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
       }
 
       payload.supply_id = supplyId;
@@ -346,7 +400,13 @@ export default function Allocations() {
     const allocatedUserId = normalizeNullableId(allocation.allocated_user_id);
 
     if (!allocatedDepartmentId && !allocatedUserId) {
-      throw new Error("Bạn phải chọn ít nhất phòng ban hoặc người nhận.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Phải chọn ít nhất phòng ban hoặc người nhận",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     return {
@@ -368,7 +428,6 @@ export default function Allocations() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -392,7 +451,6 @@ export default function Allocations() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -402,7 +460,6 @@ export default function Allocations() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }
@@ -417,11 +474,16 @@ export default function Allocations() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!allocation?.id) {
-      throw new Error("Thiếu id allocation để cập nhật.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Thiếu id bản cấp phát",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -443,7 +505,6 @@ export default function Allocations() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -453,7 +514,6 @@ export default function Allocations() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -461,12 +521,24 @@ export default function Allocations() {
 
   const handleUpdateAllocationStatus = async ({ id, status, note }) => {
     if (!id) {
-      throw new Error("Thiếu id allocation.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Thiếu id bản cấp phát",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     const normalizedStatus = String(status || "").trim().toLowerCase();
     if (!normalizedStatus) {
-      throw new Error("Status là bắt buộc.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Status là bắt buộc",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     // STAFF chỉ được xác nhận đã nhận vật tư => completed
@@ -478,7 +550,6 @@ export default function Allocations() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -506,7 +577,6 @@ export default function Allocations() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -516,7 +586,6 @@ export default function Allocations() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setStatusUpdatingId(null);
     }
@@ -531,11 +600,16 @@ export default function Allocations() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!allocation?.id) {
-      throw new Error("Thiếu id allocation.");
+      toast({
+        title: "Thiếu thông tin",
+        description: "Thiếu id bản cấp phát khi deactivate",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (!allocation.is_active) {
@@ -566,7 +640,6 @@ export default function Allocations() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -576,7 +649,6 @@ export default function Allocations() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setDeactivatingId(null);
     }

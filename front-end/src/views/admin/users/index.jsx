@@ -155,11 +155,16 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!user?.id) {
-      throw new Error("Thiếu id người dùng để cập nhật.");
+      toast({
+        title: "Thiếu id người dùng",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     const payload = {
@@ -186,7 +191,6 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Missing required fields");
     }
 
     try {
@@ -206,7 +210,6 @@ export default function Users() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -216,7 +219,6 @@ export default function Users() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -231,11 +233,16 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!user?.id) {
-      throw new Error("Thiếu id người dùng.");
+      toast({
+        title: "Thiếu id người dùng",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (user.role === "admin") {
@@ -246,7 +253,6 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Cannot deactivate admin");
     }
 
     try {
@@ -274,7 +280,6 @@ export default function Users() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -284,7 +289,6 @@ export default function Users() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setTogglingId(null);
     }
@@ -299,7 +303,6 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     const manageableRole = normalizeManageableRole(user.role);
@@ -312,7 +315,6 @@ export default function Users() {
         duration: 3000,
         isClosable: true,
       });
-      throw new Error("Invalid role");
     }
 
     const payload = {
@@ -342,7 +344,6 @@ export default function Users() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Missing required fields");
     }
 
     try {
@@ -362,7 +363,6 @@ export default function Users() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -372,7 +372,6 @@ export default function Users() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }

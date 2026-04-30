@@ -216,11 +216,36 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!asset?.id) {
-      throw new Error("Thiếu id tài sản để cập nhật.");
+      toast({
+        title: "Thiếu id tài sản lô",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+    }
+
+    if(!asset.useful_life){
+        toast({
+        title: "Thiếu thông tin",
+        description: "Thông tin thời gian khấu hao phải lớn hơn 0",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+    }
+
+    if(asset?.useful_life <= 0){
+        toast({
+        title: "Thiếu thông tin",
+        description: "Thông tin thời gian khấu hao phải lớn hơn 0",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -242,7 +267,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -252,7 +276,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -267,13 +290,30 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
       setCreating(true);
 
       const payload = buildAssetPayload(asset);
+      if(!payload.useful_life){
+        toast({
+        title: "Thiếu thông tin",
+        description: "Thông tin thời gian khấu hao là bắt buộc",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      }
+      if(payload?.useful_life <= 0){
+        toast({
+        title: "Thiếu thông tin",
+        description: "Thông tin thời gian khấu hao phải lớn hơn 0",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+      }
       await createAsset(payload);
       await fetchAssets();
 
@@ -289,7 +329,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -299,7 +338,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }
@@ -308,7 +346,7 @@ export default function Assets() {
   const handleApproveAsset = async (asset) => {
     if (!canDeactivateAssetByRole) {
       toast({ title: "Không có quyền", description: "Chỉ admin mới được duyệt.", status: "warning", duration: 2500, isClosable: true });
-      throw new Error("Permission denied");
+      
     }
     try {
       setApprovingId(asset.id);
@@ -316,9 +354,9 @@ export default function Assets() {
       await fetchAssets();
       toast({ title: "Đã duyệt", description: "Lô tài sản đã được duyệt và kích hoạt.", status: "success", duration: 2500, isClosable: true });
     } catch (error) {
-      if (isUnauthorizedError(error)) { handleUnauthorized(); throw error; }
+      if (isUnauthorizedError(error)) { handleUnauthorized();}
       toast({ title: "Duyệt thất bại", description: error.message || "Không thể duyệt tài sản.", status: "error", duration: 3000, isClosable: true });
-      throw error;
+     
     } finally {
       setApprovingId(null);
     }
@@ -327,7 +365,7 @@ export default function Assets() {
   const handleRejectAsset = async (asset) => {
     if (!canDeactivateAssetByRole) {
       toast({ title: "Không có quyền", description: "Chỉ admin mới được từ chối.", status: "warning", duration: 2500, isClosable: true });
-      throw new Error("Permission denied");
+      
     }
     try {
       setRejectingId(asset.id);
@@ -335,9 +373,9 @@ export default function Assets() {
       await fetchAssets();
       toast({ title: "Đã từ chối", description: "Yêu cầu tài sản đã bị từ chối.", status: "info", duration: 2500, isClosable: true });
     } catch (error) {
-      if (isUnauthorizedError(error)) { handleUnauthorized(); throw error; }
+      if (isUnauthorizedError(error)) { handleUnauthorized(); }
       toast({ title: "Thao tác thất bại", description: error.message || "Không thể từ chối.", status: "error", duration: 3000, isClosable: true });
-      throw error;
+     
     } finally {
       setRejectingId(null);
     }
@@ -352,11 +390,16 @@ export default function Assets() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!asset?.id) {
-      throw new Error("Thiếu id tài sản.");
+      toast({
+        title: "Thiếu id tài sản lô",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     if (!asset.is_active) {
@@ -387,7 +430,6 @@ export default function Assets() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -397,7 +439,6 @@ export default function Assets() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setDeactivatingId(null);
     }

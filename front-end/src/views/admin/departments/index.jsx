@@ -117,7 +117,13 @@ export default function Departments() {
     }
 
     if (!payload.code || !payload.name) {
-      throw new Error("Code và name là bắt buộc.");
+      toast({
+        title: "Thiếu code, name",
+        description: "Code, name là bắt buộc",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     return payload;
@@ -132,11 +138,16 @@ export default function Departments() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!department?.id) {
-      throw new Error("Thiếu id phòng ban để cập nhật.");
+      toast({
+        title: "Thiếu id phòng ban",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -158,7 +169,6 @@ export default function Departments() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -168,7 +178,6 @@ export default function Departments() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setSavingId(null);
     }
@@ -183,7 +192,6 @@ export default function Departments() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     try {
@@ -205,7 +213,6 @@ export default function Departments() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -215,7 +222,6 @@ export default function Departments() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setCreating(false);
     }
@@ -230,11 +236,16 @@ export default function Departments() {
         duration: 2500,
         isClosable: true,
       });
-      throw new Error("Permission denied");
     }
 
     if (!department?.id) {
-      throw new Error("Thiếu id phòng ban.");
+      toast({
+        title: "Thiếu id phòng ban",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
     }
 
     try {
@@ -255,7 +266,6 @@ export default function Departments() {
 
       if (isUnauthorizedError(error)) {
         handleUnauthorized();
-        throw error;
       }
 
       toast({
@@ -265,7 +275,6 @@ export default function Departments() {
         duration: 3000,
         isClosable: true,
       });
-      throw error;
     } finally {
       setDeletingId(null);
     }
