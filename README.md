@@ -1,3 +1,6 @@
+Hướng dẫn demo nhanh ở dưới cùng
+
+
 # PTIT Asset Management
 
 Hệ thống quản lý tài sản và vật tư được xây dựng với **FastAPI + SQLAlchemy + SQLite** ở backend và **React + Chakra UI** ở frontend. Dự án phục vụ quản lý tài sản, vật tư, cấp phát, bảo trì, cho mượn tài sản, xuất vật tư, bảo hành và theo dõi báo cáo tổng quan.
@@ -17,6 +20,7 @@ Hệ thống quản lý tài sản và vật tư được xây dựng với **Fa
 - [9. API và tài liệu kiểm thử](#9-api-và-tài-liệu-kiểm-thử)
 - [10. Hướng phát triển tiếp theo](#10-hướng-phát-triển-tiếp-theo)
 - [11. Tác giả](#11-tác-giả)
+- [12. Hướng dẫn chạy demo nhanh](## Ghi chú sử dụng nhanh)
 
 ---
 
@@ -486,6 +490,18 @@ uvicorn app.main:app --reload
 cd PTIT-Asset-Management/horizon-ui-chakra
 npm install
 npm start
+```
+
+Tài khoản mặc định: admin
+Mật khẩu mặc định: matkhauratmanh
+Sau khi đổi mật khẩu tài khoản mặc định 
+Mở terminal 3
+
+### Terminal 3 – Sample data
+
+```bash
+cd PTIT-Asset-Management
+python3 run_sql.py
 ```
 
 Sau đó truy cập:
