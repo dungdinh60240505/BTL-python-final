@@ -57,6 +57,8 @@ CREATE TABLE assets (
     condition VARCHAR(20) NOT NULL DEFAULT 'good'
         CHECK (condition IN ('new', 'good', 'fair', 'poor', 'broken')),
     location VARCHAR(255),
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     note TEXT,
     is_active BOOLEAN NOT NULL DEFAULT 1,
     required_quantity_category INTEGER NOT NULL DEFAULT 5,
@@ -77,6 +79,7 @@ CREATE TABLE quantity_assets (
     category VARCHAR(100) NOT NULL,
     specification TEXT,
     purchase_date DATE,
+    useful_life INTEGER,
     purchase_cost NUMERIC(15, 2),
     status VARCHAR(30) NOT NULL DEFAULT 'available'
         CHECK (status IN ('available', 'in_use', 'under_maintenance', 'damaged', 'liquidated')),
@@ -117,6 +120,8 @@ CREATE TABLE supplies (
     minimum_stock_level NUMERIC(15, 2) NOT NULL DEFAULT 0 CHECK (minimum_stock_level >= 0),
     unit_price NUMERIC(15, 2),
     location VARCHAR(255),
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     description TEXT,
     note TEXT,
     managed_department_id INTEGER,
