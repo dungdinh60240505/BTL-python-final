@@ -42,6 +42,10 @@ function routeIsAllowedForRole(route, role) {
     return STAFF_ALLOWED_ADMIN_PATHS.has(route.path);
   }
 
+  if (role === "manager") {
+    return route.path !== "/asset-needs";
+  }
+
   // admin / manager: cho phép tất cả route admin hiện có
   return true;
 }

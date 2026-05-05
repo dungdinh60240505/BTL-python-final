@@ -177,7 +177,10 @@ export default function Assets() {
     const assetCode = String(asset.code || "").trim();
     const name = String(asset.name || "").trim();
     const category = String(asset.category || "").trim();
-
+    if(canDeactivateAssetByRole){
+      asset.is_active = true;
+    }
+    else asset.is_active = false;
     if (!assetCode || !name || !category) {
       throw new Error("Asset code, name và category là bắt buộc.");
     }

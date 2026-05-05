@@ -69,6 +69,7 @@ export default function AssetNeeds() {
       try {
         setLoadingNeeds(true);
         const data = await getAssetNeeds(selectedDeptId);
+        console.log("Dữ liệu GET: ", data)
         setNeeds(Array.isArray(data) ? data : []);
       } catch (err) {
         if (isUnauthorizedError(err)) { handleUnauthorized(); return; }
