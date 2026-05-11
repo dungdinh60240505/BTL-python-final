@@ -137,13 +137,13 @@ def approve_location_service(
     if location.room_code == KHO_ROOM_CODE:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Không thể sửa hàng KHO.")
 
-    if location.status_approval == "approval":
+    if location.status_approval == LocationApprovalStatus.APPROVAL:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Đã approve trước đó.",
         )
-    
-    location.status_approval = "approval"
+
+    location.status_approval = LocationApprovalStatus.APPROVAL
 
     db.add(location)
     db.commit()

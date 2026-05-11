@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import selectinload
 
 from app.models.asset import Asset
 from app.models.department import Department
@@ -35,7 +35,8 @@ def _apply_asset_visibility_scope(statement, current_user: User | None):
             )
         )
 
-    return statement.where(Asset.assigned_user_id == current_user.id)
+    return statement
+    # .where(Asset.assigned_user_id == current_user.id)
 
 
 def get_asset_by_id(
@@ -67,7 +68,7 @@ def list_assets(
     skip: int = 0,
     limit: int = 100,
     keyword: str | None = None,
-    category: str | None = None,
+    category_id: int | None = None,
     status_filter: str | None = None,
     condition_filter: str | None = None,
     assigned_department_id: int | None = None,
@@ -78,6 +79,7 @@ def list_assets(
     statement = select(Asset).options(
         selectinload(Asset.assigned_department),
         selectinload(Asset.assigned_user),
+        selectinload(Asset.category),
     )
 
     # Giới hạn phạm vi xem của Staff trước
@@ -94,8 +96,8 @@ def list_assets(
             )
         )
 
-    if category:
-        statement = statement.where(Asset.category.ilike(category.strip()))
+    if category_id is not None:
+        statement = statement.where(Asset.category_id == category_id)
 
     if status_filter is not None:
         statement = statement.where(Asset.status == status_filter)
@@ -164,7 +166,6 @@ def create_asset(db: Session, payload: AssetCreate) -> Asset:
     asset = Asset(
         asset_code=payload.asset_code.strip(),
         name=payload.name.strip(),
-        category=payload.category.strip(),
         serial_number=payload.serial_number.strip()
         if payload.serial_number
         else None,
@@ -178,6 +179,8 @@ def create_asset(db: Session, payload: AssetCreate) -> Asset:
         condition=payload.condition,
         location=payload.location.strip() if payload.location else None,
         note=payload.note.strip() if payload.note else None,
+        vendor_name=payload.vendor_name.strip() if payload.vendor_name else None,
+        category_id=payload.category_id,
         assigned_department_id=assigned_department_id,
         assigned_user_id=assigned_user_id,
         is_active=payload.is_active,
@@ -231,9 +234,6 @@ def update_asset(db: Session, asset: Asset, payload: AssetUpdate) -> Asset:
     if "name" in update_data and update_data["name"] is not None:
         asset.name = update_data["name"].strip()
 
-    if "category" in update_data and update_data["category"] is not None:
-        asset.category = update_data["category"].strip()
-
     if "specification" in update_data:
         asset.specification = (
             update_data["specification"].strip()
@@ -265,6 +265,16 @@ def update_asset(db: Session, asset: Asset, payload: AssetUpdate) -> Asset:
 
     if "note" in update_data:
         asset.note = update_data["note"].strip() if update_data["note"] else None
+
+    if "vendor_name" in update_data:
+        asset.vendor_name = (
+            update_data["vendor_name"].strip()
+            if update_data["vendor_name"]
+            else None
+        )
+
+    if "category_id" in update_data:
+        asset.category_id = update_data["category_id"]
 
     if "assigned_department_id" in update_data:
         assigned_department_id = update_data["assigned_department_id"]

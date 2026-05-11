@@ -1,4 +1,4 @@
-PRAGMA foreign_keys = ON;
+PRAGMA foreign_keys = OFF;
 
 DROP VIEW IF EXISTS vw_recent_activities;
 DROP VIEW IF EXISTS vw_maintenance_status_summary;
@@ -6,16 +6,22 @@ DROP VIEW IF EXISTS vw_allocation_status_summary;
 DROP VIEW IF EXISTS vw_supply_low_stock;
 DROP VIEW IF EXISTS vw_asset_status_summary;
 
+-- Bảng không phụ thuộc ai (leaf nodes)
+DROP TABLE IF EXISTS warranty_tickets;
+DROP TABLE IF EXISTS supply_export_items;
+DROP TABLE IF EXISTS supply_export_vouchers;
+DROP TABLE IF EXISTS asset_loan_items;
+DROP TABLE IF EXISTS asset_loan_vouchers;
 DROP TABLE IF EXISTS maintenances;
 DROP TABLE IF EXISTS allocations;
 DROP TABLE IF EXISTS location_quantity_assets;
 DROP TABLE IF EXISTS assets;
-DROP TABLE IF EXISTS asset_quantities;
 DROP TABLE IF EXISTS quantity_assets;
 DROP TABLE IF EXISTS supplies;
 DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS category_need;
+DROP TABLE IF EXISTS category;
 DROP TABLE IF EXISTS departments;
-
 
 CREATE TABLE departments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,79 +40,132 @@ CREATE TABLE users (
     full_name VARCHAR(255) NOT NULL,
     hashed_password VARCHAR(255) NOT NULL,
     phone_number VARCHAR(20),
+    avatar_path VARCHAR(500),
     role VARCHAR(20) NOT NULL DEFAULT 'staff'
         CHECK (role IN ('admin', 'manager', 'staff')),
     is_active BOOLEAN NOT NULL DEFAULT 1,
+    must_change_password BOOLEAN NOT NULL DEFAULT 0,
     department_id INTEGER,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE SET NULL
 );
 
+CREATE TABLE category (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_code VARCHAR(50) NOT NULL UNIQUE,
+    category_type VARCHAR(20) NOT NULL DEFAULT 'supply'
+        CHECK (category_type IN ('supply', 'asset')),
+    category_name VARCHAR(100) NOT NULL,
+    description TEXT,
+    note TEXT,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE category_need (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    category_id INTEGER NOT NULL,
+    department_id INTEGER NOT NULL,
+    require_quantity INTEGER NOT NULL DEFAULT 0 CHECK (require_quantity >= 0),
+    is_active BOOLEAN NOT NULL DEFAULT 1,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE CASCADE,
+    FOREIGN KEY (department_id) REFERENCES departments(id) ON DELETE CASCADE
+);
+
+
 CREATE TABLE assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     asset_code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
+
     serial_number VARCHAR(100) UNIQUE,
     specification TEXT,
     purchase_date DATE,
     purchase_cost NUMERIC(15, 2),
+    useful_life INTEGER,
+
     status VARCHAR(30) NOT NULL DEFAULT 'available'
         CHECK (status IN ('available', 'in_use', 'under_maintenance', 'damaged', 'liquidated')),
+
     condition VARCHAR(20) NOT NULL DEFAULT 'good'
         CHECK (condition IN ('new', 'good', 'fair', 'poor', 'broken')),
+
     location VARCHAR(255),
-    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (approval_status IN ('pending', 'approved', 'rejected')),
     note TEXT,
+    vendor_name VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT 1,
     required_quantity_category INTEGER NOT NULL DEFAULT 5,
+
     assigned_department_id INTEGER,
     assigned_user_id INTEGER,
+    category_id INTEGER,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (assigned_department_id) REFERENCES departments(id) ON DELETE SET NULL,
-    FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE SET NULL
 );
 
 CREATE TABLE quantity_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) NOT NULL,
-    code VARCHAR(10) NOT NULL UNIQUE,
-    quantity INTEGER NOT NULL DEFAULT 0 CHECK ( quantity >= 0),
-    available_quantity INTEGER NOT NULL DEFAULT 0 CHECK (available_quantity >= 0 AND available_quantity <= quantity),
-    category VARCHAR(100) NOT NULL,
+    code VARCHAR(100) NOT NULL UNIQUE,
+
+    quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+    available_quantity INTEGER NOT NULL DEFAULT 0
+        CHECK (available_quantity >= 0 AND available_quantity <= quantity),
+
+    serial_number VARCHAR(100) UNIQUE,
     specification TEXT,
     purchase_date DATE,
     useful_life INTEGER,
     purchase_cost NUMERIC(15, 2),
+
     status VARCHAR(30) NOT NULL DEFAULT 'available'
         CHECK (status IN ('available', 'in_use', 'under_maintenance', 'damaged', 'liquidated')),
+
     condition VARCHAR(20) NOT NULL DEFAULT 'good'
         CHECK (condition IN ('new', 'good', 'fair', 'poor', 'broken')),
+
     location VARCHAR(255),
     note TEXT,
     is_active BOOLEAN NOT NULL DEFAULT 1,
+
     approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+
     required_quantity_category INTEGER NOT NULL DEFAULT 200,
+
     assigned_department_id INTEGER,
     assigned_user_id INTEGER,
+    category_id INTEGER,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
     FOREIGN KEY (assigned_department_id) REFERENCES departments(id) ON DELETE SET NULL,
-    FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (assigned_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE SET NULL
 );
 
 CREATE TABLE location_quantity_assets (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     room_code VARCHAR(50) NOT NULL DEFAULT 'KHO',
+
     quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-    used INTEGER NOT NULL DEFAULT 0 CHECK (used >= 0),
+    used INTEGER NOT NULL DEFAULT 0 CHECK (used >= 0 AND used <= quantity),
+
     status_approval VARCHAR(30) NOT NULL DEFAULT 'pending'
         CHECK (status_approval IN ('not_approval', 'pending', 'approval')),
+
     quantity_assets_id INTEGER,
+
     FOREIGN KEY (quantity_assets_id) REFERENCES quantity_assets(id) ON DELETE CASCADE
 );
 
@@ -114,22 +173,29 @@ CREATE TABLE supplies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     supply_code VARCHAR(50) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
+
     unit VARCHAR(50) NOT NULL DEFAULT 'item',
     quantity_in_stock NUMERIC(15, 2) NOT NULL DEFAULT 0 CHECK (quantity_in_stock >= 0),
     minimum_stock_level NUMERIC(15, 2) NOT NULL DEFAULT 0 CHECK (minimum_stock_level >= 0),
     unit_price NUMERIC(15, 2),
+
     location VARCHAR(255),
-    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'
-        CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+
     description TEXT,
     note TEXT,
+
     managed_department_id INTEGER,
+    category_id INTEGER,
+
     is_active BOOLEAN NOT NULL DEFAULT 1,
+
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (managed_department_id) REFERENCES departments(id) ON DELETE SET NULL
+
+    FOREIGN KEY (managed_department_id) REFERENCES departments(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES category(id) ON DELETE SET NULL
 );
+
 
 CREATE TABLE allocations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -205,14 +271,14 @@ CREATE INDEX ix_users_department_id ON users(department_id);
 CREATE INDEX ix_assets_id ON assets(id);
 CREATE INDEX ix_assets_asset_code ON assets(asset_code);
 CREATE INDEX ix_assets_name ON assets(name);
-CREATE INDEX ix_assets_category ON assets(category);
+CREATE INDEX ix_assets_category_id ON assets(category_id);
 CREATE INDEX ix_assets_assigned_department_id ON assets(assigned_department_id);
 CREATE INDEX ix_assets_assigned_user_id ON assets(assigned_user_id);
 
 CREATE INDEX ix_supplies_id ON supplies(id);
 CREATE INDEX ix_supplies_supply_code ON supplies(supply_code);
 CREATE INDEX ix_supplies_name ON supplies(name);
-CREATE INDEX ix_supplies_category ON supplies(category);
+CREATE INDEX ix_supplies_category_id ON supplies(category_id);
 CREATE INDEX ix_supplies_managed_department_id ON supplies(managed_department_id);
 
 CREATE INDEX ix_allocations_id ON allocations(id);

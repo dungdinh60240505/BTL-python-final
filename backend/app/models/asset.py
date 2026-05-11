@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Enum as SqlEnum,
@@ -22,6 +23,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
+    from app.models.category import Category
     from app.models.department import Department
     from app.models.user import User
 
@@ -48,13 +50,16 @@ class Asset(Base):
     __tablename__ = "assets"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    asset_code: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    asset_code: Mapped[str] = mapped_column(
+        String(50), unique=True, index=True, nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
-    category: Mapped[str] = mapped_column(String(100), index=True, nullable=False)
-    serial_number: Mapped[str | None] = mapped_column(String(100), unique=True, nullable=True)
+    serial_number: Mapped[str | None] = mapped_column(
+        String(100), unique=True, nullable=True
+    )
     specification: Mapped[str | None] = mapped_column(Text, nullable=True)
     purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    useful_life: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
+    useful_life: Mapped[int | None] = mapped_column(Integer, nullable=True)
     purchase_cost: Mapped[Decimal | None] = mapped_column(Numeric(15, 2), nullable=True)
 
     status: Mapped[AssetStatus] = mapped_column(
@@ -83,8 +88,11 @@ class Asset(Base):
 
     location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    vendor_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    required_quantity_category: Mapped[int] = mapped_column(Integer, default=5, nullable=False)
+    required_quantity_category: Mapped[int] = mapped_column(
+        Integer, default=5, nullable=False
+    )
 
     assigned_department_id: Mapped[int | None] = mapped_column(
         ForeignKey("departments.id", ondelete="SET NULL"),
@@ -93,6 +101,11 @@ class Asset(Base):
     assigned_user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
+    )
+    category_id: Mapped[int | None] = mapped_column(
+        ForeignKey("category.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -109,6 +122,11 @@ class Asset(Base):
 
     assigned_department: Mapped["Department | None"] = relationship("Department")
     assigned_user: Mapped["User | None"] = relationship("User")
+    category: Mapped["Category | None"] = relationship("Category")
+
+    __table_args__ = (
+        CheckConstraint("required_quantity_category >= 0", name="required_quantity_category_check"),
+    )
 
     def __repr__(self) -> str:
         return (

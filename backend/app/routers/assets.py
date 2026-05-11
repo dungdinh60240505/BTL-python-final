@@ -31,7 +31,7 @@ def read_assets(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=200),
     keyword: str | None = Query(default=None, min_length=1, max_length=255),
-    category: str | None = Query(default=None, min_length=1, max_length=100),
+    category_id: int | None = Query(default=None, ge=1),
     status_filter: AssetStatus | None = Query(default=None, alias="status"),
     condition_filter: AssetCondition | None = Query(
         default=None,
@@ -50,7 +50,7 @@ def read_assets(
         skip=skip,
         limit=limit,
         keyword=keyword,
-        category=category,
+        category_id=category_id,
         status_filter=status_filter.value if status_filter is not None else None,
         condition_filter=condition_filter.value
         if condition_filter is not None

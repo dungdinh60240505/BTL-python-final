@@ -9,11 +9,13 @@ import {
   MdAssignmentReturn,
   MdBuild,
   MdAssessment,
+  MdList,
 } from "react-icons/md";
 
 // Admin Imports
 import MainDashboard from "views/admin/default";
 import Profile from "views/admin/profile";
+import Categories from "views/admin/categories";
 import Departments from "views/admin/departments";
 import Users from "views/admin/users";
 import AssetsTable from "views/admin/assets";
@@ -169,6 +171,14 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     component: <Profile />,
     roles: ["admin", "manager", "staff"],
+  },
+  {
+    name: "Danh mục",
+    layout: "/admin",
+    path: "/categories-tables",
+    icon: <Icon as={MdList} width="20px" height="20px" color="inherit" />,
+    component: <Categories />,
+    roles: ["admin"],
   },
   {
     name: "Sign In",

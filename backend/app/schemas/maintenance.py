@@ -16,7 +16,7 @@ class MaintenanceAssetReference(BaseModel):
     id: int
     asset_code: str
     name: str
-    category: str
+    category_id: int | None = None
     status: AssetStatus
 
 

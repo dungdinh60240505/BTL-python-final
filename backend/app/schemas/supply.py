@@ -13,7 +13,6 @@ class SupplyBase(BaseModel):
 
     supply_code: str = Field(min_length=2, max_length=50)
     name: str = Field(min_length=2, max_length=255)
-    category: str = Field(min_length=2, max_length=100)
     unit: str = Field(default="item", min_length=1, max_length=50)
     quantity_in_stock: Decimal = Field(default=0, ge=0)
     minimum_stock_level: Decimal = Field(default=0, ge=0)
@@ -21,6 +20,7 @@ class SupplyBase(BaseModel):
     location: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=2000)
     note: str | None = Field(default=None, max_length=2000)
+    category_id: int | None = Field(default=None, ge=1)
     managed_department_id: int | None = Field(default=None, ge=1)
     is_active: bool = True
 
@@ -34,7 +34,6 @@ class SupplyUpdate(BaseModel):
 
     supply_code: str | None = Field(default=None, min_length=2, max_length=50)
     name: str | None = Field(default=None, min_length=2, max_length=255)
-    category: str | None = Field(default=None, min_length=2, max_length=100)
     unit: str | None = Field(default=None, min_length=1, max_length=50)
     quantity_in_stock: Decimal | None = Field(default=None, ge=0)
     minimum_stock_level: Decimal | None = Field(default=None, ge=0)
@@ -42,6 +41,7 @@ class SupplyUpdate(BaseModel):
     location: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=2000)
     note: str | None = Field(default=None, max_length=2000)
+    category_id: int | None = Field(default=None, ge=1)
     managed_department_id: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
 
@@ -52,7 +52,6 @@ class SupplyResponse(BaseModel):
     id: int
     supply_code: str
     name: str
-    category: str
     unit: str
     quantity_in_stock: Decimal
     minimum_stock_level: Decimal
@@ -60,6 +59,7 @@ class SupplyResponse(BaseModel):
     location: str | None = None
     description: str | None = None
     note: str | None = None
+    category_id: int | None = None
     managed_department_id: int | None = None
     managed_department: DepartmentSimple | None = None
     is_active: bool

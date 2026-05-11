@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.asset_quantity import AssetQuantity, QuantityAssetApprovalStatus
+from app.models.category import Category
 from app.models.department import Department
 from app.models.user import User, UserRole
 from app.schemas.asset_quantity import (
@@ -43,6 +44,7 @@ def get_asset_quantity_by_id(
         .options(
             selectinload(AssetQuantity.assigned_department),
             selectinload(AssetQuantity.assigned_user),
+            selectinload(AssetQuantity.category),
         )
         .where(AssetQuantity.id == asset_quantity_id)
     )
@@ -57,7 +59,7 @@ def list_asset_quantities(
     skip: int = 0,
     limit: int = 100,
     keyword: str | None = None,
-    category: str | None = None,
+    category_id: int | None = None,
     status_filter: str | None = None,
     condition_filter: str | None = None,
     assigned_department_id: int | None = None,
@@ -68,7 +70,8 @@ def list_asset_quantities(
     statement = select(AssetQuantity).options(
         selectinload(AssetQuantity.assigned_department),
         selectinload(AssetQuantity.assigned_user),
-    )
+        selectinload(AssetQuantity.category),
+    ).outerjoin(Category, AssetQuantity.category_id == Category.id)
 
     statement = _apply_asset_quantity_visibility_scope(statement, current_user)
 
@@ -77,14 +80,15 @@ def list_asset_quantities(
         statement = statement.where(
             or_(
                 AssetQuantity.name.ilike(normalized_keyword),
-                AssetQuantity.category.ilike(normalized_keyword),
+                AssetQuantity.code.ilike(normalized_keyword),
                 AssetQuantity.serial_number.ilike(normalized_keyword),
                 AssetQuantity.location.ilike(normalized_keyword),
+                func.lower(Category.category_name).ilike(normalized_keyword),
             )
         )
 
-    if category:
-        statement = statement.where(AssetQuantity.category.ilike(category.strip()))
+    if category_id is not None:
+        statement = statement.where(AssetQuantity.category_id == category_id)
 
     if status_filter is not None:
         statement = statement.where(AssetQuantity.status == status_filter)
@@ -150,7 +154,6 @@ def create_asset_quantity(
     asset_quantity = AssetQuantity(
         code=payload.code.strip(),
         name=payload.name.strip(),
-        category=payload.category.strip(),
         quantity=normalized_quantity,
         available_quantity=normalized_available_quantity,
         serial_number=payload.serial_number.strip() if payload.serial_number else None,
@@ -162,6 +165,7 @@ def create_asset_quantity(
         condition=payload.condition,
         location=payload.location.strip() if payload.location else None,
         note=payload.note.strip() if payload.note else None,
+        category_id=payload.category_id,
         assigned_department_id=assigned_department_id,
         assigned_user_id=assigned_user_id,
         is_active=is_active,
@@ -193,9 +197,6 @@ def update_asset_quantity(
     if "name" in update_data and update_data["name"] is not None:
         asset_quantity.name = update_data["name"].strip()
 
-    if "category" in update_data and update_data["category"] is not None:
-        asset_quantity.category = update_data["category"].strip()
-
     if "quantity" in update_data and update_data["quantity"] is not None:
         next_quantity = update_data["quantity"]
 
@@ -215,6 +216,9 @@ def update_asset_quantity(
         )
     asset_quantity.quantity = next_quantity
     asset_quantity.available_quantity = next_available_quantity
+
+    if "category_id" in update_data:
+        asset_quantity.category_id = update_data["category_id"]
 
     if "specification" in update_data:
         asset_quantity.specification = (

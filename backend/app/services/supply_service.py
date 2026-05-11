@@ -3,9 +3,10 @@ from __future__ import annotations
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
+from app.models.category import Category
 from app.models.department import Department
 from app.models.supply import Supply
 from app.models.user import User, UserRole
@@ -62,15 +63,16 @@ def list_supplies(
     skip: int = 0,
     limit: int = 100,
     keyword: str | None = None,
-    category: str | None = None,
+    category_id: int | None = None,
     managed_department_id: int | None = None,
     low_stock_only: bool = False,
     is_active: bool | None = None,
     current_user: User | None = None,
 ) -> list[Supply]:
     statement = select(Supply).options(
-        selectinload(Supply.managed_department)
-    )
+        selectinload(Supply.managed_department),
+        selectinload(Supply.category),
+    ).outerjoin(Category, Supply.category_id == Category.id)
 
     # Giới hạn phạm vi xem của Staff trước
     statement = _apply_supply_visibility_scope(statement, current_user)
@@ -81,13 +83,13 @@ def list_supplies(
             or_(
                 Supply.supply_code.ilike(normalized_keyword),
                 Supply.name.ilike(normalized_keyword),
-                Supply.category.ilike(normalized_keyword),
                 Supply.location.ilike(normalized_keyword),
+                func.lower(Category.category_name).ilike(normalized_keyword),
             )
         )
 
-    if category:
-        statement = statement.where(Supply.category.ilike(category.strip()))
+    if category_id is not None:
+        statement = statement.where(Supply.category_id == category_id)
 
     if managed_department_id is not None:
         statement = statement.where(
@@ -134,7 +136,6 @@ def create_supply(db: Session, payload: SupplyCreate) -> Supply:
     supply = Supply(
         supply_code=payload.supply_code.strip(),
         name=payload.name.strip(),
-        category=payload.category.strip(),
         unit=payload.unit.strip(),
         quantity_in_stock=payload.quantity_in_stock,
         minimum_stock_level=payload.minimum_stock_level,
@@ -144,6 +145,7 @@ def create_supply(db: Session, payload: SupplyCreate) -> Supply:
         if payload.description
         else None,
         note=payload.note.strip() if payload.note else None,
+        category_id=payload.category_id,
         managed_department_id=managed_department_id,
         is_active=payload.is_active,
     )
@@ -175,9 +177,6 @@ def update_supply(db: Session, supply: Supply, payload: SupplyUpdate) -> Supply:
 
     if "name" in update_data and update_data["name"] is not None:
         supply.name = update_data["name"].strip()
-
-    if "category" in update_data and update_data["category"] is not None:
-        supply.category = update_data["category"].strip()
 
     if "unit" in update_data and update_data["unit"] is not None:
         supply.unit = update_data["unit"].strip()
@@ -213,6 +212,9 @@ def update_supply(db: Session, supply: Supply, payload: SupplyUpdate) -> Supply:
 
     if "note" in update_data:
         supply.note = update_data["note"].strip() if update_data["note"] else None
+
+    if "category_id" in update_data:
+        supply.category_id = update_data["category_id"]
 
     if "managed_department_id" in update_data:
         managed_department_id = update_data["managed_department_id"]

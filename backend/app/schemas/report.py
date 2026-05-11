@@ -33,7 +33,7 @@ class LowStockSupplyItem(BaseModel):
     id: int
     supply_code: str
     name: str
-    category: str
+    category_id: int | None = None
     unit: str
     quantity_in_stock: Decimal
     minimum_stock_level: Decimal
@@ -74,6 +74,6 @@ class PendingApprovalItem(BaseModel):
     id: int
     code: str
     name: str
-    category: str
+    category_id: int | None = None
     quantity: int
     created_at: datetime

@@ -227,7 +227,7 @@ def get_low_stock_supplies(db: Session) -> list[LowStockSupplyItem]:
                 id=supply.id,
                 supply_code=supply.supply_code,
                 name=supply.name,
-                category=supply.category,
+                category_id=supply.category_id,
                 unit=supply.unit,
                 quantity_in_stock=supply.quantity_in_stock,
                 minimum_stock_level=supply.minimum_stock_level,
@@ -439,7 +439,7 @@ def get_pending_approvals(
             id=r.id,
             code=r.code,
             name=r.name,
-            category=r.category,
+            category_id=r.category_id,
             quantity=r.quantity,
             created_at=r.created_at,
         )

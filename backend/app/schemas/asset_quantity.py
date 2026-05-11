@@ -14,9 +14,9 @@ from app.schemas.user import UserSimple
 
 class AssetQuantityBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    code: str = Field(min_length=2, max_length=255)
+
+    code: str = Field(min_length=2, max_length=100)
     name: str = Field(min_length=2, max_length=255)
-    category: str = Field(min_length=2, max_length=100)
     quantity: int = Field(default=0, ge=0)
     available_quantity: int | None = Field(default=None, ge=0)
     serial_number: str | None = Field(default=None, max_length=100)
@@ -28,6 +28,7 @@ class AssetQuantityBase(BaseModel):
     condition: AssetCondition = AssetCondition.GOOD
     location: str | None = Field(default=None, max_length=255)
     note: str | None = Field(default=None, max_length=2000)
+    category_id: int | None = Field(default=None, ge=1)
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool = True
@@ -40,9 +41,9 @@ class AssetQuantityCreate(AssetQuantityBase):
 
 class AssetQuantityUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    code: str | None = Field(default=None, min_length=2, max_length=255)
+
+    code: str | None = Field(default=None, min_length=2, max_length=100)
     name: str | None = Field(default=None, min_length=2, max_length=255)
-    category: str | None = Field(default=None, min_length=2, max_length=100)
     quantity: int | None = Field(default=None, ge=0)
     available_quantity: int | None = Field(default=None, ge=0)
     serial_number: str | None = Field(default=None, max_length=100)
@@ -54,6 +55,7 @@ class AssetQuantityUpdate(BaseModel):
     condition: AssetCondition | None = None
     location: str | None = Field(default=None, max_length=255)
     note: str | None = Field(default=None, max_length=2000)
+    category_id: int | None = Field(default=None, ge=1)
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
@@ -64,9 +66,8 @@ class AssetQuantityResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    name: str
     code: str
-    category: str
+    name: str
     quantity: int
     available_quantity: int
     serial_number: str | None = None
@@ -78,6 +79,7 @@ class AssetQuantityResponse(BaseModel):
     condition: AssetCondition
     location: str | None = None
     note: str | None = None
+    category_id: int | None = None
     assigned_department_id: int | None = None
     assigned_user_id: int | None = None
     assigned_department: DepartmentSimple | None = None

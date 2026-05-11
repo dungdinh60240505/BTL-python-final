@@ -14,7 +14,8 @@ router = APIRouter(prefix="/asset-needs", tags=["Asset Needs"])
 
 class AssetNeedsResponse(BaseModel):
     model_config = ConfigDict(from_attributes=False)
-    category: str
+    category_id: int | None = None
+    category: str | None = None
     asset_type: str
     required_quantity_category: int
     current_quantity: int
@@ -25,7 +26,7 @@ class CategoryRequirementUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     department_id: int = Field(ge=1)
     asset_type: str
-    category: str = Field(min_length=1)
+    category_id: int = Field(ge=1)
     required_quantity_category: int = Field(ge=0)
 
 
@@ -48,7 +49,7 @@ def patch_category_requirement(
         db=db,
         department_id=payload.department_id,
         asset_type=payload.asset_type,
-        category=payload.category,
+        category_id=payload.category_id,
         required_quantity_category=payload.required_quantity_category,
     )
     return {"updated_rows": updated}

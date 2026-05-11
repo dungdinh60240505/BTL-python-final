@@ -15,7 +15,6 @@ class AssetBase(BaseModel):
 
     asset_code: str = Field(min_length=2, max_length=50)
     name: str = Field(min_length=2, max_length=255)
-    category: str = Field(min_length=2, max_length=100)
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
@@ -25,6 +24,8 @@ class AssetBase(BaseModel):
     condition: AssetCondition = AssetCondition.GOOD
     location: str | None = Field(default=None, max_length=255)
     note: str | None = Field(default=None, max_length=2000)
+    vendor_name: str | None = Field(default=None, max_length=255)
+    category_id: int | None = Field(default=None, ge=1)
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool = True
@@ -39,7 +40,6 @@ class AssetUpdate(BaseModel):
 
     asset_code: str | None = Field(default=None, min_length=2, max_length=50)
     name: str | None = Field(default=None, min_length=2, max_length=255)
-    category: str | None = Field(default=None, min_length=2, max_length=100)
     serial_number: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
@@ -49,6 +49,8 @@ class AssetUpdate(BaseModel):
     condition: AssetCondition | None = None
     location: str | None = Field(default=None, max_length=255)
     note: str | None = Field(default=None, max_length=2000)
+    vendor_name: str | None = Field(default=None, max_length=255)
+    category_id: int | None = Field(default=None, ge=1)
     assigned_department_id: int | None = Field(default=None, ge=1)
     assigned_user_id: int | None = Field(default=None, ge=1)
     is_active: bool | None = None
@@ -60,7 +62,6 @@ class AssetResponse(BaseModel):
     id: int
     asset_code: str
     name: str
-    category: str
     serial_number: str | None = None
     specification: str | None = None
     purchase_date: date | None = None
@@ -70,6 +71,8 @@ class AssetResponse(BaseModel):
     condition: AssetCondition
     location: str | None = None
     note: str | None = None
+    vendor_name: str | None = None
+    category_id: int | None = None
     assigned_department_id: int | None = None
     assigned_user_id: int | None = None
     assigned_department: DepartmentSimple | None = None
