@@ -48,13 +48,28 @@ function TypeBadge({ type }) {
   );
 }
 
+function StatusBadge({ isActive }) {
+  return (
+    <Badge
+      colorScheme={isActive ? "green" : "red"}
+      borderRadius="999px"
+      px="10px"
+      py="4px"
+    >
+      {isActive ? "Hoạt động" : "Không hoạt động"}
+    </Badge>
+  );
+}
+
 export default function ColumnsTable(props) {
   const {
     tableData = [],
     title,
+    departments = [],
     onSaveCategory,
     onDeleteCategory,
     onCreateCategory,
+    onRefreshCategory,
     addLabel = "Thêm danh mục",
     canManageCategories = false,
     canDeleteCategoryByRole = false,
@@ -63,6 +78,7 @@ export default function ColumnsTable(props) {
 
   const [keyword, setKeyword] = React.useState("");
   const [typeFilter, setTypeFilter] = React.useState("");
+  const [statusFilter, setStatusFilter] = React.useState("");
   const [pageIndex, setPageIndex] = React.useState(0);
 
   const [selectedCategory, setSelectedCategory] = React.useState(null);
@@ -91,13 +107,18 @@ export default function ColumnsTable(props) {
       const matchesType =
         !typeFilter || row.category_type === typeFilter;
 
-      return matchesKeyword && matchesType;
+      const matchesStatus =
+        !statusFilter ||
+        (statusFilter === "active" && Boolean(row.is_active)) ||
+        (statusFilter === "inactive" && !Boolean(row.is_active));
+
+      return matchesKeyword && matchesType && matchesStatus;
     });
-  }, [keyword, typeFilter, tableData]);
+  }, [keyword, typeFilter, statusFilter, tableData]);
 
   React.useEffect(() => {
     setPageIndex(0);
-  }, [keyword, typeFilter, tableData]);
+  }, [keyword, typeFilter, statusFilter, tableData]);
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
   const currentPage = Math.min(pageIndex, totalPages - 1);
@@ -207,12 +228,23 @@ export default function ColumnsTable(props) {
           <Select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            maxW={{ base: "100%", md: "200px" }}
+            maxW={{ base: "100%", md: "180px" }}
             borderRadius="16px"
           >
             <option value="">Tất cả loại</option>
             <option value="supply">Vật tư</option>
             <option value="asset">Tài sản</option>
+          </Select>
+
+          <Select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            maxW={{ base: "100%", md: "180px" }}
+            borderRadius="16px"
+          >
+            <option value="">Trạng thái hoạt động</option>
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Không hoạt động</option>
           </Select>
         </Flex>
 
@@ -224,12 +256,13 @@ export default function ColumnsTable(props) {
                 <Th borderColor={borderColor}>Mã</Th>
                 <Th borderColor={borderColor}>Tên</Th>
                 <Th borderColor={borderColor}>Loại</Th>
+                <Th borderColor={borderColor}>Trạng thái</Th>
               </Tr>
             </Thead>
             <Tbody>
               {loading ? (
                 <Tr>
-                  <Td colSpan={4} borderColor={borderColor}>
+                  <Td colSpan={5} borderColor={borderColor}>
                     <Text py="20px" textAlign="center" color="gray.500">
                       Đang tải dữ liệu...
                     </Text>
@@ -237,7 +270,7 @@ export default function ColumnsTable(props) {
                 </Tr>
               ) : paginatedRows.length === 0 ? (
                 <Tr>
-                  <Td colSpan={4} borderColor={borderColor}>
+                  <Td colSpan={5} borderColor={borderColor}>
                     <Text py="20px" textAlign="center" color="gray.500">
                       Không có danh mục phù hợp.
                     </Text>
@@ -256,6 +289,9 @@ export default function ColumnsTable(props) {
                     <Td borderColor={borderColor}>{row.category_name}</Td>
                     <Td borderColor={borderColor}>
                       <TypeBadge type={row.category_type} />
+                    </Td>
+                    <Td borderColor={borderColor}>
+                      <StatusBadge isActive={row.is_active} />
                     </Td>
                   </Tr>
                 ))
@@ -304,6 +340,7 @@ export default function ColumnsTable(props) {
 
       <CategoryModal
         category={selectedCategory}
+        departments={departments}
         isOpen={isModalOpen}
         isSubmitting={
           modalMode === "create"
@@ -320,6 +357,7 @@ export default function ColumnsTable(props) {
         onClose={handleCloseModal}
         onSave={modalMode === "create" ? handleCreate : handleSave}
         onDelete={handleDelete}
+        onRefreshCategory={onRefreshCategory}
         mode={modalMode}
         canManageCategories={canManageCategories}
         canDeleteCategoryByRole={canDeleteCategoryByRole}

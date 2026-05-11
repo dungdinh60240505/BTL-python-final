@@ -115,6 +115,7 @@ export default function ColumnsTable(props) {
     tableData = [],
     title,
     departmentOptions = [],
+    categoryOptions = [],
     userOptions = [],
     onSaveAsset,
     onDeactivateAsset,
@@ -144,14 +145,14 @@ export default function ColumnsTable(props) {
   const searchInputBg = useColorModeValue("secondaryGray.300", "navy.900");
   const searchInputColor = useColorModeValue("gray.700", "gray.100");
 
-  const categoryOptions = React.useMemo(() => {
-    const unique = new Set(
-      tableData
-        .map((item) => String(item.category || "").trim())
-        .filter(Boolean)
-    );
-    return Array.from(unique).sort();
-  }, [tableData]);
+  // const categoryOptions = React.useMemo(() => {
+  //   const unique = new Set(
+  //     tableData
+  //       .map((item) => String(item.category || "").trim())
+  //       .filter(Boolean)
+  //   );
+  //   return Array.from(unique).sort();
+  // }, [tableData]);
 
   const filteredData = React.useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
@@ -177,7 +178,7 @@ export default function ColumnsTable(props) {
 
       const matchesCategory =
         !categoryFilter ||
-        String(row.category || "").toLowerCase() === categoryFilter.toLowerCase();
+        String(row.category_id ?? "") === categoryFilter;
 
       const matchesStatus =
         !statusFilter || String(row.status || "") === statusFilter;
@@ -319,8 +320,8 @@ export default function ColumnsTable(props) {
           >
             <option value="">Tất cả danh mục</option>
             {categoryOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </Select>
@@ -466,6 +467,7 @@ export default function ColumnsTable(props) {
       <AssetModal
         asset={selectedAsset}
         departmentOptions={departmentOptions}
+        categoryOptions={categoryOptions}
         userOptions={userOptions}
         isOpen={isModalOpen}
         isSubmitting={

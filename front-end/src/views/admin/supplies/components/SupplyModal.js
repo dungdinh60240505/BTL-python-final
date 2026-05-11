@@ -26,7 +26,7 @@ import {
 const initialFormData = {
   code: "",
   name: "",
-  category: "",
+  category_id: "",
   unit: "item",
   quantity_in_stock: "0",
   minimum_stock_level: "0",
@@ -53,6 +53,7 @@ export default function SupplyModal(props) {
   const {
     supply,
     departmentOptions = [],
+    categoryOptions = [],
     isOpen,
     isSubmitting,
     isDeactivating,
@@ -96,7 +97,7 @@ export default function SupplyModal(props) {
     setFormData({
       code: supply.code || "",
       name: supply.name || "",
-      category: supply.category || "",
+      category_id: supply.category_id ? String(supply.category_id) : "",
       unit: supply.unit || "item",
       quantity_in_stock: supply.quantity_in_stock || "0",
       minimum_stock_level: supply.minimum_stock_level || "0",
@@ -143,7 +144,7 @@ export default function SupplyModal(props) {
       ...(isCreateMode ? {} : { id: supply.id }),
       code: formData.code,
       name: formData.name,
-      category: formData.category,
+      category_id: formData.category_id ? parseInt(formData.category_id, 10) : null,
       unit: formData.unit,
       quantity_in_stock: formData.quantity_in_stock,
       minimum_stock_level: formData.minimum_stock_level,
@@ -348,11 +349,17 @@ export default function SupplyModal(props) {
                   <GridItem>
                     <FormControl isRequired>
                       <FormLabel>Danh mục</FormLabel>
-                      <Input
-                        value={formData.category}
-                        onChange={(e) => handleChange("category", e.target.value)}
-                        placeholder="VD: Paper, Ink, Accessory"
-                      />
+                      <Select
+                        value={formData.category_id}
+                        onChange={(e) => handleChange("category_id", e.target.value)}
+                      >
+                        <option value="">-- Chọn danh mục --</option>
+                        {categoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </Select>
                     </FormControl>
                   </GridItem>
 

@@ -10,7 +10,9 @@ import {
   deleteCategory,
   listCategories,
   updateCategory,
+  getCategoryById,
 } from "api/categoriesApi";
+import { listDepartments } from "api/departmentsApi";
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -26,6 +28,9 @@ function mapCategoryToRow(item, index) {
     category_code: item.category_code || "",
     category_name: item.category_name || "",
     category_type: item.category_type || "supply",
+    description: item.description || "",
+    note: item.note || "",
+    is_active: item.is_active ?? true,
     created_at: formatDateTime(item.created_at),
     updated_at: formatDateTime(item.updated_at),
   };
@@ -50,6 +55,8 @@ function validateCategoryPayload(category, isCreateMode = false) {
       category_code: code,
       category_name: name,
       category_type: type,
+      description: (category.description || "").trim() || null,
+      note: (category.note || "").trim() || null,
     },
   };
 }
@@ -59,6 +66,7 @@ export default function Categories() {
   const toast = useToast();
 
   const [tableData, setTableData] = React.useState([]);
+  const [departments, setDepartments] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
@@ -89,6 +97,11 @@ export default function Categories() {
     );
   }, []);
 
+  const fetchDepartments = React.useCallback(async () => {
+    const depts = await listDepartments({ limit: 200, is_active: true });
+    setDepartments(Array.isArray(depts) ? depts : []);
+  }, []);
+
   const fetchCurrentProfile = React.useCallback(async () => {
     const profile = await getCurrentUser();
     setCurrentUserRole(profile?.role || "");
@@ -97,7 +110,7 @@ export default function Categories() {
   const loadPageData = React.useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([fetchCategories(), fetchCurrentProfile()]);
+      await Promise.all([fetchCategories(), fetchDepartments(), fetchCurrentProfile()]);
     } catch (error) {
       console.error("Load categories page failed:", error);
 
@@ -116,7 +129,7 @@ export default function Categories() {
     } finally {
       setLoading(false);
     }
-  }, [fetchCategories, fetchCurrentProfile, handleUnauthorized, toast]);
+  }, [fetchCategories, fetchDepartments, fetchCurrentProfile, handleUnauthorized, toast]);
 
   React.useEffect(() => {
     loadPageData();
@@ -300,10 +313,15 @@ export default function Categories() {
     }
   };
 
+  const handleRefreshCategory = React.useCallback(async (categoryId) => {
+    return await getCategoryById(categoryId);
+  }, []);
+
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <ColumnsTable
         tableData={tableData}
+        departments={departments}
         title="Quản lý danh mục"
         addLabel="Thêm danh mục"
         onSaveCategory={{
@@ -318,6 +336,7 @@ export default function Categories() {
           handler: handleDeleteCategory,
           loadingId: deletingId,
         }}
+        onRefreshCategory={handleRefreshCategory}
         canManageCategories={canManageCategories}
         canDeleteCategoryByRole={canDeleteCategoryByRole}
         loading={loading}

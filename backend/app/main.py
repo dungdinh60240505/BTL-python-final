@@ -31,6 +31,7 @@ from app.routers.assets import router as asset_router
 from app.routers.asset_quantities import router as asset_quantity_router
 from app.routers.auth import router as auth_router
 from app.routers.categories import router as categories_router
+from app.routers.category_needs import router as category_needs_router
 from app.routers.departments import router as department_router
 from app.routers.maintenances import router as maintenance_router
 from app.routers.reports import router as report_router
@@ -107,6 +108,7 @@ app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(categories_router, prefix=settings.API_V1_STR)
 app.include_router(department_router, prefix=settings.API_V1_STR)
 app.include_router(asset_needs_router, prefix=settings.API_V1_STR)
+app.include_router(category_needs_router, prefix=settings.API_V1_STR)
 app.include_router(user_router, prefix=settings.API_V1_STR)
 app.include_router(asset_router, prefix=settings.API_V1_STR)
 app.include_router(asset_quantity_router, prefix=settings.API_V1_STR)

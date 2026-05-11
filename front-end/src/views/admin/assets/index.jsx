@@ -14,6 +14,7 @@ import {
 } from "api/assetsApi";
 import { listDepartments } from "api/departmentsApi";
 import { listUsers } from "api/usersApi";
+import { listCategories } from "api/categoriesApi";
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -33,7 +34,8 @@ function mapAssetToRow(item, index) {
     id: item.id,
     code: item.asset_code || "",
     name: item.name || "",
-    category: item.category || "",
+    category_id: item.category_id ?? null,
+    category: item.category?.category_name || "",
     serial_number: item.serial_number || "",
     specification: item.specification || "",
     purchase_date: item.purchase_date || "",
@@ -77,6 +79,7 @@ export default function Assets() {
   const [tableData, setTableData] = React.useState([]);
   const [departmentOptions, setDepartmentOptions] = React.useState([]);
   const [userOptions, setUserOptions] = React.useState([]);
+  const [categoryOptions, setCategoryOptions] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
@@ -116,19 +119,30 @@ export default function Assets() {
     const canLoadUsers =
       normalizedRole === "admin" || normalizedRole === "manager";
 
-    const requests = [listDepartments({ limit: 200 })];
+    const requests = [
+      listDepartments({ limit: 200 }),
+      listCategories({ limit: 200, category_type: "asset" }),
+    ];
     if (canLoadUsers) {
       requests.push(listUsers({ limit: 200 }));
     }
 
     const results = await Promise.all(requests);
     const departments = results[0];
-    const users = canLoadUsers ? results[1] : [];
+    const categories = results[1];
+    const users = canLoadUsers ? results[2] : [];
 
     setDepartmentOptions(
       (Array.isArray(departments) ? departments : []).map((item) => ({
         value: String(item.id),
         label: `${item.code || item.id} - ${item.name}`,
+      }))
+    );
+
+    setCategoryOptions(
+      (Array.isArray(categories) ? categories : []).map((item) => ({
+        value: String(item.id),
+        label: `${item.category_code} - ${item.category_name}`,
       }))
     );
 
@@ -176,19 +190,19 @@ export default function Assets() {
   const buildAssetPayload = (asset) => {
     const assetCode = String(asset.code || "").trim();
     const name = String(asset.name || "").trim();
-    const category = String(asset.category || "").trim();
+    const categoryId = asset.category_id;
     if(canDeactivateAssetByRole){
       asset.is_active = true;
     }
     else asset.is_active = false;
-    if (!assetCode || !name || !category) {
-      throw new Error("Asset code, name và category là bắt buộc.");
+    if (!assetCode || !name || !categoryId) {
+      throw new Error("Asset code, name và danh mục là bắt buộc.");
     }
 
     return {
       asset_code: assetCode,
       name,
-      category,
+      category_id: categoryId,
       serial_number: normalizeNullableText(asset.serial_number),
       specification: normalizeNullableText(asset.specification),
       purchase_date: normalizeNullableText(asset.purchase_date),
@@ -200,7 +214,7 @@ export default function Assets() {
       note: normalizeNullableText(asset.note),
       assigned_department_id: normalizeNullableId(asset.assigned_department_id),
       assigned_user_id: normalizeNullableId(asset.assigned_user_id),
-      is_active: asset.is_active ?? false,//null hoặc undefined thì mới trả false
+      is_active: asset.is_active ?? false,
     };
   };
 
@@ -436,6 +450,7 @@ export default function Assets() {
         tableData={tableData}
         title="Quản lý tài sản"
         departmentOptions={departmentOptions}
+        categoryOptions={categoryOptions}
         userOptions={userOptions}
         canManageAssets={canManageAssets}
         canDeactivateAssetByRole={canDeactivateAssetByRole}

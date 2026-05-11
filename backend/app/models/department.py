@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 
 if TYPE_CHECKING:
-    from app.models.user import User
+    from app.models.category import CategoryNeed
 
 
 class Department(Base):
@@ -36,6 +36,11 @@ class Department(Base):
 
     users: Mapped[list["User"]] = relationship(
         "User",
+        back_populates="department",
+        cascade="save-update, merge",
+    )
+    needs: Mapped[list["CategoryNeed"]] = relationship(
+        "CategoryNeed",
         back_populates="department",
         cascade="save-update, merge",
     )

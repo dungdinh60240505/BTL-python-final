@@ -1,143 +1,439 @@
+/*! =========================================================
+* Horizon UI - v1.1.0
+========================================================= */
+
 import React from "react";
 import {
   Badge,
   Box,
+  Button,
+  Flex,
+  HStack,
   Input,
+  InputGroup,
+  InputLeftElement,
   Select,
-  Spinner,
+  Text,
   Table,
   Tbody,
   Td,
-  Text,
   Th,
   Thead,
   Tr,
   useColorModeValue,
   useToast,
+  VStack,
+  Switch,
+  FormControl,
+  FormLabel,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalHeader,
+  ModalOverlay,
+  ModalFooter,
+  useDisclosure,
+  Stack,
 } from "@chakra-ui/react";
+import { SearchIcon, AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import { useNavigate } from "react-router-dom";
 
 import Card from "components/card/Card";
 import { getCurrentUser, logout } from "api/authApi";
 import { isUnauthorizedError } from "api/http";
-import { getAssetNeeds, updateCategoryRequirement } from "api/assetNeedsApi";
+import { listCategoryNeeds, createCategoryNeed, updateCategoryNeed, deleteCategoryNeed } from "api/categoryNeedsApi";
+import { listCategories } from "api/categoriesApi";
 import { listDepartments } from "api/departmentsApi";
 
-const STATUS_COLOR = { shortage: "red", sufficient: "green", surplus: "blue" };
-const STATUS_LABEL = { shortage: "Thiếu", sufficient: "Đủ", surplus: "Thừa" };
-const TYPE_LABEL = { asset: "Tài sản cố định", quantity_asset: "Tài sản số lượng" };
+const PAGE_SIZE = 10;
+
+const TYPE_BADGE_COLOR = {
+  supply: "blue",
+  asset: "purple",
+};
+
+const TYPE_LABEL = {
+  supply: "Vật tư",
+  asset: "Tài sản",
+};
+
+function TypeBadge({ type }) {
+  return (
+    <Badge
+      colorScheme={TYPE_BADGE_COLOR[type] || "gray"}
+      borderRadius="999px"
+      px="10px"
+      py="4px"
+    >
+      {TYPE_LABEL[type] || type}
+    </Badge>
+  );
+}
+
+function StatusBadge({ isActive }) {
+  return (
+    <Badge
+      colorScheme={isActive ? "green" : "red"}
+      borderRadius="999px"
+      px="10px"
+      py="4px"
+    >
+      {isActive ? "Hoạt động" : "Không hoạt động"}
+    </Badge>
+  );
+}
+
+const initialForm = {
+  category_id: "",
+  department_id: "",
+  require_quantity: "",
+  is_active: true,
+};
 
 export default function AssetNeeds() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [departments, setDepartments] = React.useState([]);
-  const [selectedDeptId, setSelectedDeptId] = React.useState("");
   const [needs, setNeeds] = React.useState([]);
-  const [loadingDepts, setLoadingDepts] = React.useState(true);
-  const [loadingNeeds, setLoadingNeeds] = React.useState(false);
-  const [editingKey, setEditingKey] = React.useState(null);
-  const [editValue, setEditValue] = React.useState("");
+  const [departments, setDepartments] = React.useState([]);
+  const [categories, setCategories] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [currentUserRole, setCurrentUserRole] = React.useState("");
+
+  const [keyword, setKeyword] = React.useState("");
+  const [deptFilter, setDeptFilter] = React.useState("");
+  const [categoryFilter, setCategoryFilter] = React.useState("");
+  const [showAll, setShowAll] = React.useState(false);
+
+  const [pageIndex, setPageIndex] = React.useState(0);
+
+  const [savingId, setSavingId] = React.useState(null);
+  const [deletingId, setDeletingId] = React.useState(null);
+  const [creating, setCreating] = React.useState(false);
+
+  const [editingNeed, setEditingNeed] = React.useState(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [modalMode, setModalMode] = React.useState("create");
+  const [formData, setFormData] = React.useState(initialForm);
+
+  const canManage = currentUserRole === "admin";
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");
+  const rowHoverBg = useColorModeValue("gray.100", "whiteAlpha.100");
+  const searchIconColor = useColorModeValue("gray.400", "gray.300");
+  const searchInputBg = useColorModeValue("secondaryGray.300", "navy.900");
+  const searchInputColor = useColorModeValue("gray.700", "gray.100");
 
   const handleUnauthorized = React.useCallback(() => {
     logout();
-    toast({ title: "Phiên đăng nhập đã hết hạn", status: "warning", duration: 2500, isClosable: true });
+    toast({
+      title: "Phiên đăng nhập đã hết hạn",
+      description: "Vui lòng đăng nhập lại.",
+      status: "warning",
+      duration: 2500,
+      isClosable: true,
+    });
     navigate("/auth/sign-in", { replace: true });
   }, [navigate, toast]);
 
+  const fetchDepartments = React.useCallback(async () => {
+    const depts = await listDepartments({ limit: 200, is_active: true });
+    return Array.isArray(depts) ? depts : [];
+  }, []);
+
+  const fetchCategories = React.useCallback(async () => {
+    const cats = await listCategories({ limit: 200 });
+    return Array.isArray(cats) ? cats : [];
+  }, []);
+
+  const fetchNeeds = React.useCallback(async (params = {}) => {
+    const data = await listCategoryNeeds(params);
+    return Array.isArray(data) ? data : [];
+  }, []);
+
+  const loadPageData = React.useCallback(async () => {
+    try {
+      setLoading(true);
+      const [profile, depts, cats] = await Promise.all([
+        getCurrentUser(),
+        fetchDepartments(),
+        fetchCategories(),
+      ]);
+      setCurrentUserRole(profile?.role || "");
+      setDepartments(depts);
+      setCategories(cats);
+    } catch (error) {
+      console.error("Load page failed:", error);
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+        return;
+      }
+      toast({
+        title: "Không tải được dữ liệu",
+        description: error.message || "Có lỗi xảy ra.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchDepartments, fetchCategories, handleUnauthorized, toast]);
+
   React.useEffect(() => {
+    loadPageData();
+  }, [loadPageData]);
+
+  React.useEffect(() => {
+    setLoading(true);
+    setPageIndex(0);
+    const params = {};
+    if (!showAll && deptFilter) {
+      params.department_id = parseInt(deptFilter, 10);
+    }
+    if (categoryFilter) {
+      params.category_id = parseInt(categoryFilter, 10);
+    }
+
     (async () => {
       try {
-        await getCurrentUser();
-        const depts = await listDepartments({ limit: 200 });
-        setDepartments(Array.isArray(depts) ? depts : []);
-      } catch (err) {
-        if (isUnauthorizedError(err)) { handleUnauthorized(); return; }
-        toast({ title: "Không tải được phòng ban", status: "error", duration: 3000, isClosable: true });
+        const data = await fetchNeeds(params);
+        setNeeds(data);
+      } catch (error) {
+        console.error("Load needs failed:", error);
+        if (isUnauthorizedError(error)) {
+          handleUnauthorized();
+          return;
+        }
+        toast({
+          title: "Không tải được dữ liệu nhu cầu",
+          description: error.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
       } finally {
-        setLoadingDepts(false);
+        setLoading(false);
       }
     })();
-  }, [handleUnauthorized, toast]);
+  }, [showAll, deptFilter, categoryFilter, fetchNeeds, handleUnauthorized, toast]);
+
+  const filteredData = React.useMemo(() => {
+    if (!keyword.trim()) return needs;
+    const kw = keyword.trim().toLowerCase();
+    return (needs || []).filter((row) =>
+      [
+        row.category_name,
+        row.category_code,
+        row.department_name,
+        row.department_code,
+      ].some((v) => v && String(v).toLowerCase().includes(kw))
+    );
+  }, [needs, keyword]);
 
   React.useEffect(() => {
-    if (!selectedDeptId) { setNeeds([]); return; }
-    (async () => {
-      try {
-        setLoadingNeeds(true);
-        const data = await getAssetNeeds(selectedDeptId);
-        console.log("Dữ liệu GET: ", data)
-        setNeeds(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (isUnauthorizedError(err)) { handleUnauthorized(); return; }
-        toast({ title: "Không tải được nhu cầu tài sản", status: "error", duration: 3000, isClosable: true });
-      } finally {
-        setLoadingNeeds(false);
-      }
-    })();
-  }, [selectedDeptId, handleUnauthorized, toast]);
+    setPageIndex(0);
+  }, [keyword, needs]);
 
-  const rowKey = (row) => `${row.asset_type}::${row.category}`;
+  const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+  const currentPage = Math.min(pageIndex, totalPages - 1);
+  const paginatedRows = filteredData.slice(
+    currentPage * PAGE_SIZE,
+    currentPage * PAGE_SIZE + PAGE_SIZE
+  );
+  const startRow = filteredData.length === 0 ? 0 : currentPage * PAGE_SIZE + 1;
+  const endRow = Math.min((currentPage + 1) * PAGE_SIZE, filteredData.length);
 
-  const handleStartEdit = (row) => {
-    setEditingKey(rowKey(row));
-    setEditValue(String(row.required_quantity_category));
+  const handleOpenCreate = () => {
+    setFormData({ ...initialForm, department_id: deptFilter || "" });
+    setEditingNeed(null);
+    setModalMode("create");
+    setIsModalOpen(true);
   };
 
-  const handleSaveEdit = async (row) => {
-    const val = parseInt(editValue, 10);
-    if (isNaN(val) || val < 0) {
-      toast({ title: "Giá trị không hợp lệ", status: "warning", duration: 2000, isClosable: true });
+  const handleOpenEdit = (need) => {
+    setFormData({
+      category_id: String(need.category_id),
+      department_id: need.department_id ? String(need.department_id) : "",
+      require_quantity: String(need.require_quantity),
+      is_active: need.is_active ?? true,
+    });
+    setEditingNeed(need);
+    setModalMode("edit");
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    if (savingId || creating) return;
+    setIsModalOpen(false);
+    setEditingNeed(null);
+    setFormData(initialForm);
+  };
+
+  const handleSaveEdit = async () => {
+    const qty = parseInt(formData.require_quantity, 10);
+    if (!formData.category_id) {
+      toast({ title: "Vui lòng chọn danh mục.", status: "warning", duration: 2000, isClosable: true });
       return;
     }
+    if (isNaN(qty) || qty < 0) {
+      toast({ title: "Số lượng cần phải là số nguyên không âm.", status: "warning", duration: 2000, isClosable: true });
+      return;
+    }
+
     try {
-      await updateCategoryRequirement({
-        department_id: parseInt(selectedDeptId, 10),
-        asset_type: row.asset_type,
-        category: row.category,
-        required_quantity_category: val,
+      setSavingId(editingNeed.id);
+      await updateCategoryNeed(editingNeed.id, {
+        category_id: parseInt(formData.category_id, 10),
+        department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
+        require_quantity: qty,
+        is_active: formData.is_active,
       });
-      setNeeds((prev) =>
-        prev.map((r) =>
-          rowKey(r) === rowKey(row)
-            ? { ...r, required_quantity_category: val, status: calcStatus(r.current_quantity, val) }
-            : r
-        )
-      );
-      toast({ title: "Đã cập nhật", status: "success", duration: 2000, isClosable: true });
-    } catch (err) {
-      toast({ title: "Cập nhật thất bại", description: err.message, status: "error", duration: 3000, isClosable: true });
+
+      const params = {};
+      if (!showAll && deptFilter) params.department_id = parseInt(deptFilter, 10);
+      if (categoryFilter) params.category_id = parseInt(categoryFilter, 10);
+      const data = await fetchNeeds(params);
+      setNeeds(data);
+
+      toast({ title: "Cập nhật thành công", status: "success", duration: 2500, isClosable: true });
+      handleCloseModal();
+    } catch (error) {
+      console.error("Update failed:", error);
+      toast({ title: "Cập nhật thất bại", description: error.message, status: "error", duration: 3000, isClosable: true });
     } finally {
-      setEditingKey(null);
+      setSavingId(null);
     }
   };
 
-  const calcStatus = (current, required) => {
-    if (current < required) return "shortage";
-    if (current === required) return "sufficient";
-    return "surplus";
+  const handleCreate = async () => {
+    const qty = parseInt(formData.require_quantity, 10);
+    if (!formData.category_id) {
+      toast({ title: "Vui lòng chọn danh mục.", status: "warning", duration: 2000, isClosable: true });
+      return;
+    }
+    if (isNaN(qty) || qty < 0) {
+      toast({ title: "Số lượng cần phải là số nguyên không âm.", status: "warning", duration: 2000, isClosable: true });
+      return;
+    }
+
+    try {
+      setCreating(true);
+      await createCategoryNeed({
+        category_id: parseInt(formData.category_id, 10),
+        department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
+        require_quantity: qty,
+      });
+
+      const params = {};
+      if (!showAll && deptFilter) params.department_id = parseInt(deptFilter, 10);
+      if (categoryFilter) params.category_id = parseInt(categoryFilter, 10);
+      const data = await fetchNeeds(params);
+      setNeeds(data);
+
+      toast({ title: "Tạo thành công", status: "success", duration: 2500, isClosable: true });
+      handleCloseModal();
+    } catch (error) {
+      console.error("Create failed:", error);
+      toast({ title: "Tạo thất bại", description: error.message, status: "error", duration: 3000, isClosable: true });
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleDelete = async (need) => {
+    try {
+      setDeletingId(need.id);
+      await deleteCategoryNeed(need.id);
+
+      const params = {};
+      if (!showAll && deptFilter) params.department_id = parseInt(deptFilter, 10);
+      if (categoryFilter) params.category_id = parseInt(categoryFilter, 10);
+      const data = await fetchNeeds(params);
+      setNeeds(data);
+
+      toast({ title: "Xóa thành công", status: "success", duration: 2500, isClosable: true });
+      handleCloseModal();
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast({ title: "Xóa thất bại", description: error.message, status: "error", duration: 3000, isClosable: true });
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
-      <Card flexDirection="column" w="100%" px="0px">
-        <Box px="25px" pt="20px" pb="16px">
-          <Text color={textColor} fontSize="22px" fontWeight="700">Nhu cầu tài sản</Text>
-          <Text mt="4px" color="gray.500" fontSize="sm">Theo dõi số lượng tài sản cần thiết theo phòng ban. Nhấn vào số lượng cần để thay đổi (admin)</Text>
-        </Box>
+      <Card flexDirection="column" w="100%" px="0px" overflowX="auto">
+        <Flex
+          px="25px"
+          pt="20px"
+          pb="16px"
+          justify="space-between"
+          align={{ base: "stretch", md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          gap="12px"
+        >
+          <Box>
+            <Text color={textColor} fontSize="22px" fontWeight="700">
+              Nhu cầu tài sản
+            </Text>
+            <Text mt="4px" color="gray.500" fontSize="sm">
+              {canManage
+                ? "Quản lý nhu cầu số lượng theo danh mục và phòng ban."
+                : "Bạn đang ở chế độ chỉ xem nhu cầu tài sản."}
+            </Text>
+          </Box>
 
-        <Box px="25px" pb="20px" maxW="360px">
-          {loadingDepts ? (
-            <Spinner size="sm" />
-          ) : (
+          {canManage && (
+            <Button
+              leftIcon={<AddIcon />}
+              colorScheme="blue"
+              borderRadius="12px"
+              onClick={handleOpenCreate}
+            >
+              Thêm nhu cầu
+            </Button>
+          )}
+        </Flex>
+
+        <Flex
+          px="25px"
+          pb="18px"
+          gap="12px"
+          wrap="wrap"
+          align="center"
+        >
+          <HStack spacing="12px" wrap="wrap">
+            <FormControl display="flex" alignItems="center" w="auto" whiteSpace="nowrap">
+              <Switch
+                id="show-all"
+                colorScheme="blue"
+                isChecked={showAll}
+                onChange={(e) => {
+                  setShowAll(e.target.checked);
+                  setDeptFilter("");
+                  setPageIndex(0);
+                }}
+                mr="8px"
+              />
+              <FormLabel htmlFor="show-all" mb="0" fontSize="sm" color="gray.500" cursor="pointer">
+                Tất cả phòng ban
+              </FormLabel>
+            </FormControl>
+
             <Select
-              placeholder="-- Chọn phòng ban --"
-              value={selectedDeptId}
-              onChange={(e) => setSelectedDeptId(e.target.value)}
+              value={deptFilter}
+              onChange={(e) => {
+                setDeptFilter(e.target.value);
+                setPageIndex(0);
+              }}
+              maxW={{ base: "100%", md: "260px" }}
               borderRadius="16px"
+              placeholder="-- Chọn phòng ban --"
+              isDisabled={showAll || loading}
             >
               {departments.map((d) => (
                 <option key={d.id} value={String(d.id)}>
@@ -145,88 +441,255 @@ export default function AssetNeeds() {
                 </option>
               ))}
             </Select>
-          )}
+
+            <Select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setPageIndex(0);
+              }}
+              maxW={{ base: "100%", md: "200px" }}
+              borderRadius="16px"
+              placeholder="Tất cả danh mục"
+              isDisabled={loading}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={String(c.id)}>
+                  {c.category_name}
+                </option>
+              ))}
+            </Select>
+          </HStack>
+
+          <InputGroup maxW={{ base: "100%", md: "280px" }} ml="auto">
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color={searchIconColor} />
+            </InputLeftElement>
+            <Input
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              placeholder="Tìm danh mục, phòng ban..."
+              bg={searchInputBg}
+              color={searchInputColor}
+              borderRadius="16px"
+              _placeholder={{ color: "gray.400" }}
+            />
+          </InputGroup>
+        </Flex>
+
+        <Box overflowX="auto">
+          <Table variant="simple">
+            <Thead>
+              <Tr>
+                <Th borderColor={borderColor}>STT</Th>
+                <Th borderColor={borderColor}>Phòng ban</Th>
+                <Th borderColor={borderColor}>Danh mục</Th>
+                <Th borderColor={borderColor}>Loại</Th>
+                <Th borderColor={borderColor} isNumeric>Hiện có</Th>
+                <Th borderColor={borderColor} isNumeric>Số lượng cần</Th>
+                <Th borderColor={borderColor}>Trạng thái</Th>
+                {canManage && <Th borderColor={borderColor}>Thao tác</Th>}
+              </Tr>
+            </Thead>
+            <Tbody>
+              {loading ? (
+                <Tr>
+                  <Td colSpan={8} borderColor={borderColor} textAlign="center" py="20px" color="gray.500">
+                    Đang tải dữ liệu...
+                  </Td>
+                </Tr>
+              ) : !showAll && !deptFilter ? (
+                <Tr>
+                  <Td colSpan={8} borderColor={borderColor} textAlign="center" py="20px" color="gray.500">
+                    Vui lòng chọn phòng ban hoặc bật "Tất cả phòng ban" để xem dữ liệu.
+                  </Td>
+                </Tr>
+              ) : paginatedRows.length === 0 ? (
+                <Tr>
+                  <Td colSpan={8} borderColor={borderColor} textAlign="center" py="20px" color="gray.500">
+                    Không có nhu cầu nào.
+                  </Td>
+                </Tr>
+              ) : (
+                paginatedRows.map((row, index) => (
+                  <Tr key={row.id} _hover={{ bg: rowHoverBg }}>
+                    <Td borderColor={borderColor}>{index + 1}</Td>
+                    <Td borderColor={borderColor}>
+                      {row.department_name ? (
+                        <Text fontWeight="600">
+                          {row.department_code} — {row.department_name}
+                        </Text>
+                      ) : (
+                        <Text color="gray.400" fontStyle="italic">—</Text>
+                      )}
+                    </Td>
+                    <Td borderColor={borderColor}>{row.category_name || row.category_id}</Td>
+                    <Td borderColor={borderColor}>
+                      <TypeBadge type={row.category_type} />
+                    </Td>
+                    <Td borderColor={borderColor} isNumeric>
+                      {row.current_quantity ?? 0}
+                    </Td>
+                    <Td borderColor={borderColor} isNumeric fontWeight="600">
+                      {row.require_quantity}
+                    </Td>
+                    <Td borderColor={borderColor}>
+                      <StatusBadge isActive={row.is_active} />
+                    </Td>
+                    {canManage && (
+                      <Td borderColor={borderColor}>
+                        <HStack spacing="8px">
+                          <Button
+                            size="xs"
+                            colorScheme="blue"
+                            variant="ghost"
+                            leftIcon={<EditIcon />}
+                            onClick={() => handleOpenEdit(row)}
+                          >
+                            Sửa
+                          </Button>
+                          <Button
+                            size="xs"
+                            colorScheme="red"
+                            variant="ghost"
+                            leftIcon={<DeleteIcon />}
+                            isLoading={deletingId === row.id}
+                            onClick={() => handleDelete(row)}
+                          >
+                            Xóa
+                          </Button>
+                        </HStack>
+                      </Td>
+                    )}
+                  </Tr>
+                ))
+              )}
+            </Tbody>
+          </Table>
         </Box>
 
-        {selectedDeptId && (
-          <Box px="25px" pb="25px" overflowX="auto">
-            {loadingNeeds ? (
-              <Spinner />
-            ) : needs.length === 0 ? (
-              <Text color="gray.500" py="20px" textAlign="center">
-                Phòng ban này chưa có tài sản nào.
-              </Text>
-            ) : (
-              <Table variant="simple" size="sm">
-                <Thead>
-                  <Tr>
-                    <Th>Danh mục</Th>
-                    <Th>Loại</Th>
-                    <Th isNumeric>Số lượng cần</Th>
-                    <Th isNumeric>Hiện có</Th>
-                    <Th>Trạng thái</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {needs.map((row) => {
-                    const key = rowKey(row);
-                    const isEditing = editingKey === key;
-                    return (
-                      <Tr key={key} borderBottom="1px solid" borderColor={borderColor}>
-                        <Td fontWeight="600" textTransform="capitalize">{row.category}</Td>
-                        <Td>
-                          <Badge colorScheme={row.asset_type === "asset" ? "purple" : "teal"} borderRadius="999px" px="8px">
-                            {TYPE_LABEL[row.asset_type] || row.asset_type}
-                          </Badge>
-                        </Td>
-                        <Td isNumeric>
-                          {isEditing ? (
-                            <Input
-                              size="xs"
-                              type="number"
-                              min="0"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              onBlur={() => handleSaveEdit(row)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSaveEdit(row);
-                                if (e.key === "Escape") setEditingKey(null);
-                              }}
-                              autoFocus
-                              w="80px"
-                              textAlign="right"
-                            />
-                          ) : (
-                            <Text
-                              cursor="pointer"
-                              _hover={{ textDecoration: "underline", color: "blue.400" }}
-                              onClick={() => handleStartEdit(row)}
-                              textAlign="right"
-                            >
-                              {row.required_quantity_category}
-                            </Text>
-                          )}
-                        </Td>
-                        <Td isNumeric>{row.current_quantity}</Td>
-                        <Td>
-                          <Badge
-                            colorScheme={STATUS_COLOR[row.status] || "gray"}
-                            borderRadius="999px"
-                            px="10px"
-                            py="4px"
-                          >
-                            {STATUS_LABEL[row.status] || row.status}
-                          </Badge>
-                        </Td>
-                      </Tr>
-                    );
-                  })}
-                </Tbody>
-              </Table>
-            )}
-          </Box>
-        )}
+        <Flex
+          px="25px"
+          py="18px"
+          align="center"
+          justify="space-between"
+          wrap="wrap"
+          gap="12px"
+        >
+          <Text fontSize="sm" color="gray.500">
+            {filteredData.length === 0
+              ? "Không có bản ghi"
+              : `Hiển thị ${startRow}-${endRow} trong ${filteredData.length} bản ghi`}
+          </Text>
+
+          <Flex gap="10px">
+            <Button
+              variant="outline"
+              onClick={() => setPageIndex((p) => Math.max(p - 1, 0))}
+              isDisabled={currentPage === 0}
+            >
+              Trước
+            </Button>
+            <Button variant="ghost" isDisabled>
+              Trang {currentPage + 1} / {totalPages}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setPageIndex((p) => Math.min(p + 1, totalPages - 1))}
+              isDisabled={currentPage >= totalPages - 1}
+            >
+              Tiếp
+            </Button>
+          </Flex>
+        </Flex>
       </Card>
+
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="md" isCentered scrollBehavior="inside">
+        <ModalOverlay />
+        <ModalContent bg={useColorModeValue("white", "navy.800")} borderRadius="20px">
+          <ModalHeader>{modalMode === "create" ? "Thêm nhu cầu" : "Sửa nhu cầu"}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Stack spacing="16px">
+              <FormControl isRequired>
+                <FormLabel>Danh mục</FormLabel>
+                <Select
+                  value={formData.category_id}
+                  onChange={(e) => setFormData((p) => ({ ...p, category_id: e.target.value }))}
+                  placeholder="-- Chọn danh mục --"
+                  borderRadius="12px"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={String(c.id)}>
+                      {c.category_code} — {c.category_name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Phòng ban</FormLabel>
+                <Select
+                  value={formData.department_id}
+                  onChange={(e) => setFormData((p) => ({ ...p, department_id: e.target.value }))}
+                  placeholder="-- Chọn phòng ban (tùy chọn) --"
+                  borderRadius="12px"
+                >
+                  {departments.map((d) => (
+                    <option key={d.id} value={String(d.id)}>
+                      {d.code} — {d.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl isRequired>
+                <FormLabel>Số lượng cần</FormLabel>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.require_quantity}
+                  onChange={(e) => setFormData((p) => ({ ...p, require_quantity: e.target.value }))}
+                  placeholder="VD: 10"
+                  borderRadius="12px"
+                />
+              </FormControl>
+
+              {modalMode === "edit" && (
+                <FormControl display="flex" alignItems="center">
+                  <FormLabel mb="0">Hoạt động</FormLabel>
+                  <Switch
+                    colorScheme="green"
+                    isChecked={formData.is_active}
+                    onChange={(e) => setFormData((p) => ({ ...p, is_active: e.target.checked }))}
+                  />
+                </FormControl>
+              )}
+            </Stack>
+          </ModalBody>
+          <ModalFooter gap="12px">
+            {modalMode === "edit" && canManage && (
+              <Button
+                colorScheme="red"
+                variant="outline"
+                leftIcon={<DeleteIcon />}
+                isLoading={deletingId !== null}
+                onClick={() => handleDelete(editingNeed)}
+              >
+                Xóa
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleCloseModal}>Hủy</Button>
+            <Button
+              colorScheme="blue"
+              isLoading={modalMode === "create" ? creating : savingId !== null}
+              onClick={modalMode === "create" ? handleCreate : handleSaveEdit}
+            >
+              Lưu
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

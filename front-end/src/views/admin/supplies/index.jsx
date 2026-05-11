@@ -14,6 +14,7 @@ import {
   updateSupplyStock,
 } from "api/suppliesApi";
 import { listDepartments } from "api/departmentsApi";
+import { listCategories } from "api/categoriesApi";
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -48,7 +49,8 @@ function mapSupplyToRow(item, index) {
     id: item.id,
     code: item.supply_code || "",
     name: item.name || "",
-    category: item.category || "",
+    category_id: item.category_id ?? null,
+    category: item.category?.category_name || "",
     unit: item.unit || "item",
     quantity_in_stock: String(item.quantity_in_stock ?? 0),
     minimum_stock_level: String(item.minimum_stock_level ?? 0),
@@ -73,6 +75,7 @@ export default function Supplies() {
 
   const [tableData, setTableData] = React.useState([]);
   const [departmentOptions, setDepartmentOptions] = React.useState([]);
+  const [categoryOptions, setCategoryOptions] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
@@ -125,6 +128,16 @@ export default function Supplies() {
     );
   }, []);
 
+  const fetchCategories = React.useCallback(async () => {
+    const cats = await listCategories({ limit: 200, category_type: "supply" });
+    setCategoryOptions(
+      (Array.isArray(cats) ? cats : []).map((item) => ({
+        value: String(item.id),
+        label: `${item.category_code} - ${item.category_name}`,
+      }))
+    );
+  }, []);
+
   const fetchCurrentProfile = React.useCallback(async () => {
     const profile = await getCurrentUser();
     setCurrentUserRole(String(profile?.role || "").trim().toLowerCase());
@@ -136,6 +149,7 @@ export default function Supplies() {
       await Promise.all([
         fetchSupplies(),
         fetchDepartments(),
+        fetchCategories(),
         fetchCurrentProfile(),
       ]);
     } catch (error) {
@@ -156,7 +170,7 @@ export default function Supplies() {
     } finally {
       setLoading(false);
     }
-  }, [fetchCurrentProfile, fetchDepartments, fetchSupplies, handleUnauthorized, toast]);
+  }, [fetchCurrentProfile, fetchCategories, fetchDepartments, fetchSupplies, handleUnauthorized, toast]);
 
   React.useEffect(() => {
     loadPageData();
@@ -165,16 +179,16 @@ export default function Supplies() {
   const buildSupplyPayload = (supply) => {
     const code = String(supply.code || "").trim();
     const name = String(supply.name || "").trim();
-    const category = String(supply.category || "").trim();
+    const categoryId = supply.category_id;
 
-    if (!code || !name || !category) {
-      throw new Error("Supply code, name và category là bắt buộc.");
+    if (!code || !name || !categoryId) {
+      throw new Error("Supply code, name và danh mục là bắt buộc.");
     }
 
     return {
       supply_code: code,
       name,
-      category,
+      category_id: categoryId,
       unit: String(supply.unit || "item").trim() || "item",
       quantity_in_stock: normalizeNullableNumber(supply.quantity_in_stock, 0),
       minimum_stock_level: normalizeNullableNumber(supply.minimum_stock_level, 0),
@@ -489,6 +503,7 @@ export default function Supplies() {
         tableData={tableData}
         title="Quản lý vật tư"
         departmentOptions={departmentOptions}
+        categoryOptions={categoryOptions}
         canManageSupplies={canManageSupplies}
         canUpdateStock={canUpdateStock}
         canDeactivateSupplyByRole={canDeactivateSupplyByRole}

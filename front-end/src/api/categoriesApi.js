@@ -43,11 +43,11 @@ export function deleteCategory(categoryId) {
   });
 }
 
-export function updateRequireQuantity(categoryId, requireQuantity) {
+export function updateRequireQuantity(categoryId, departmentId, requireQuantity) {
   return apiRequest(`/categories/${categoryId}/require-quantity`, {
     method: "PATCH",
     auth: true,
-    body: { require_quantity: requireQuantity },
+    body: { department_id: departmentId, require_quantity: requireQuantity },
     fallbackErrorMessage: "Cập nhật số lượng cần thất bại.",
   });
 }

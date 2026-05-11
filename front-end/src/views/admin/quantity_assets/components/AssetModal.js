@@ -62,7 +62,7 @@ const CONDITION_OPTIONS = [
 const initialFormData = {
   code: "",
   name: "",
-  category: "",
+  category_id: "",
   quantity: 0,
   available_quantity: 0,
   specification: "",
@@ -260,6 +260,7 @@ export default function AssetModal(props) {
   const {
     asset,
     departmentOptions = [],
+    categoryOptions = [],
     userOptions = [],
     isOpen,
     isSubmitting,
@@ -294,9 +295,9 @@ export default function AssetModal(props) {
     setFormData({
       code: asset.code || "",
       name: asset.name || "",
+      category_id: asset.category_id ? String(asset.category_id) : "",
       quantity: asset.quantity || 0,
       available_quantity: asset.available_quantity || 0,
-      category: asset.category || "",
       specification: asset.specification || "",
       purchase_date: asset.purchase_date || "",
       useful_life: asset.useful_life || 1,
@@ -327,9 +328,9 @@ export default function AssetModal(props) {
       ...(isCreateMode ? {} : { id: asset.id }),
       code: formData.code,
       name: formData.name,
+      category_id: formData.category_id ? parseInt(formData.category_id, 10) : null,
       quantity: formData.quantity,
       available_quantity: formData.available_quantity,
-      category: formData.category,
       specification: formData.specification,
       purchase_date: formData.purchase_date,
       useful_life: formData.useful_life || 1,
@@ -452,8 +453,18 @@ export default function AssetModal(props) {
                 <GridItem>
                   <FormControl isRequired>
                     <FormLabel>Danh mục</FormLabel>
-                    <Input value={formData.category} onChange={(e) => handleChange("category", e.target.value)} placeholder="VD: Laptop, Printer"
-                    isDisabled={ isCreateMode ? false : true }  />
+                    <Select
+                      value={formData.category_id}
+                      onChange={(e) => handleChange("category_id", e.target.value)}
+                      isDisabled={isCreateMode ? false : true}
+                    >
+                      <option value="">-- Chọn danh mục --</option>
+                      {categoryOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
                   </FormControl>
                 </GridItem>
                 <GridItem>

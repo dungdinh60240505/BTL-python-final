@@ -9,7 +9,6 @@ import {
   MdAssignmentReturn,
   MdBuild,
   MdAssessment,
-  MdList,
 } from "react-icons/md";
 
 // Admin Imports
@@ -57,6 +56,21 @@ const routes = [
     roles: ["admin", "manager"],
   },
   {
+    name: "Danh mục",
+    layout: "/admin",
+    path: "/categories",
+    icon: (
+      <Icon
+        as={MdOutlineShoppingCart}
+        width="20px"
+        height="20px"
+        color="inherit"
+      />
+    ),
+    component: <Categories />,
+    roles: ["admin"],
+  },
+  {
     name: "Tài sản văn phòng",
     layout: "/admin",
     path: "/assets-tables",
@@ -87,7 +101,7 @@ const routes = [
     roles: ["admin", "manager", "staff"],
   },
   {
-    name: "Nhu cầu tài sản",
+    name: "Nhu cầu danh mục",
     layout: "/admin",
     path: "/asset-needs",
     icon: <Icon as={MdAssessment} width="20px" height="20px" color="inherit" />,
@@ -171,14 +185,6 @@ const routes = [
     icon: <Icon as={MdPerson} width="20px" height="20px" color="inherit" />,
     component: <Profile />,
     roles: ["admin", "manager", "staff"],
-  },
-  {
-    name: "Danh mục",
-    layout: "/admin",
-    path: "/categories-tables",
-    icon: <Icon as={MdList} width="20px" height="20px" color="inherit" />,
-    component: <Categories />,
-    roles: ["admin"],
   },
   {
     name: "Sign In",

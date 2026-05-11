@@ -38,7 +38,7 @@ def get_asset_quantity_by_id(
     db: Session,
     asset_quantity_id: int,
     current_user: User | None = None,
-) -> AssetQuantity | None:
+    ) -> AssetQuantity | None:
     statement = (
         select(AssetQuantity)
         .options(
@@ -66,7 +66,7 @@ def list_asset_quantities(
     assigned_user_id: int | None = None,
     is_active: bool | None = None,
     current_user: User | None = None,
-) -> list[AssetQuantity]:
+    ) -> list[AssetQuantity]:
     statement = select(AssetQuantity).options(
         selectinload(AssetQuantity.assigned_department),
         selectinload(AssetQuantity.assigned_user),
@@ -113,7 +113,7 @@ def list_asset_quantities(
 
 def create_asset_quantity(
     db: Session, payload: AssetQuantityCreate, current_user: User | None = None
-) -> AssetQuantity:
+    ) -> AssetQuantity:
     print("payload: ", payload);
     assigned_department_id = payload.assigned_department_id
     if assigned_department_id is not None:

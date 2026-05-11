@@ -43,7 +43,7 @@ function routeIsAllowedForRole(route, role) {
   }
 
   if (role === "manager") {
-    return route.path !== "/asset-needs";
+    return route.path !== "/asset-needs" && route.path !== "/categories";
   }
 
   // admin / manager: cho phép tất cả route admin hiện có
