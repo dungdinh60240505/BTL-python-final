@@ -118,7 +118,7 @@ export default function AssetNeeds() {
   const [modalMode, setModalMode] = React.useState("create");
   const [formData, setFormData] = React.useState(initialForm);
 
-  const canManage = currentUserRole === "admin";
+  const canManage = currentUserRole === "admin" || currentUserRole === "manager";
 
   const textColor = useColorModeValue("secondaryGray.900", "white");
   const borderColor = useColorModeValue("gray.200", "whiteAlpha.100");

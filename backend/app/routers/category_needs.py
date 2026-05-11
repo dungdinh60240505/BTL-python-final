@@ -90,7 +90,7 @@ def read_category_needs(
 def create_new_category_need(
     payload: CategoryNeedCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     need, current_qty = create_category_need(db=db, payload=payload)
     need = get_category_need_or_404(db=db, category_need_id=need.id)
@@ -105,7 +105,7 @@ def update_existing_category_need(
     category_need_id: int,
     payload: CategoryNeedUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     
     need = get_category_need_or_404(db=db, category_need_id=category_need_id)
@@ -118,7 +118,7 @@ def update_existing_category_need(
 def delete_existing_category_need(
     category_need_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     need = get_category_need_or_404(db=db, category_need_id=category_need_id)
     delete_category_need(db=db, category_need=need)

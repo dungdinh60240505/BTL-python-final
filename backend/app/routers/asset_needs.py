@@ -34,7 +34,7 @@ class CategoryRequirementUpdate(BaseModel):
 def read_asset_needs(
     department_id: int = Query(ge=1),
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     return get_asset_needs(db=db, department_id=department_id)
 
@@ -43,7 +43,7 @@ def read_asset_needs(
 def patch_category_requirement(
     payload: CategoryRequirementUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_roles(UserRole.ADMIN)),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
     updated = update_required_quantity_category(
         db=db,
