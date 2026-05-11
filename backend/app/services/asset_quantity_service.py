@@ -13,6 +13,7 @@ from app.schemas.asset_quantity import (
     AssetQuantityStatusUpdate,
     AssetQuantityUpdate,
 )
+from app.services.category_needs_service import ensure_category_need
 from app.services.location_quantity_asset_service import create_kho_location
 
 
@@ -180,6 +181,9 @@ def create_asset_quantity(
     if is_admin:
         create_kho_location(db=db, quantity_assets_id=asset_quantity.id, lot_quantity=normalized_quantity)
 
+    if asset_quantity.category_id is not None and asset_quantity.assigned_department_id is not None:
+        ensure_category_need(db, asset_quantity.category_id, asset_quantity.assigned_department_id)
+
     return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
 
 
@@ -296,6 +300,15 @@ def update_asset_quantity_status(
 
 def deactivate_asset_quantity(db: Session, asset_quantity: AssetQuantity) -> AssetQuantity:
     asset_quantity.is_active = False
+    db.add(asset_quantity)
+    db.commit()
+    db.refresh(asset_quantity)
+
+    return get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity.id)
+
+
+def activate_asset_quantity(db: Session, asset_quantity: AssetQuantity) -> AssetQuantity:
+    asset_quantity.is_active = True
     db.add(asset_quantity)
     db.commit()
     db.refresh(asset_quantity)

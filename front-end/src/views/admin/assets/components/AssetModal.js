@@ -502,19 +502,6 @@ export default function AssetModal(props) {
                     </Select>
                   </FormControl>
                 </GridItem>
-                      {/* nếu không phải create mode */}
-                {!isCreateMode ? (
-                  <GridItem>
-                    <FormControl display="flex" alignItems="center">
-                      <FormLabel mb="0">Hoạt động</FormLabel>
-                      <Switch
-                        isChecked={formData.is_active}
-                        onChange={(e) => handleChange("is_active", e.target.checked)}
-                        isDisabled={canDeactivateAssetByRole ? false: true}
-                      />
-                    </FormControl>
-                  </GridItem>
-                ) : null}
               </Grid>
 
               <FormControl>

@@ -9,6 +9,7 @@ import {
   approveAsset,
   createAsset,
   deactivateAsset,
+  activateAsset,
   listAssets,
   rejectAsset,
   updateAsset,
@@ -87,6 +88,7 @@ export default function Assets() {
   const [savingId, setSavingId] = React.useState(null);
   const [creating, setCreating] = React.useState(false);
   const [deactivatingId, setDeactivatingId] = React.useState(null);
+  const [activatingId, setActivatingId] = React.useState(null);
   const [approvingId, setApprovingId] = React.useState(null);
   const [rejectingId, setRejectingId] = React.useState(null);
   const [currentUserRole, setCurrentUserRole] = React.useState("");
@@ -458,6 +460,69 @@ export default function Assets() {
     }
   };
 
+  const handleActivateAsset = async (asset) => {
+    if (!canDeactivateAssetByRole) {
+      toast({
+        title: "Không có quyền",
+        description: "Chỉ admin mới được kích hoạt tài sản.",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+    }
+
+    if (!asset?.id) {
+      toast({
+        title: "Thiếu id tài sản lô",
+        description: "Cần bổ sung thông tin id",
+        status: "warning",
+        duration: 2500,
+        isClosable: true,
+      });
+    }
+
+    if (asset.is_active) {
+      toast({
+        title: "Không hợp lệ",
+        description: "Tài sản này đã ở trạng thái active.",
+        status: "info",
+        duration: 2200,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      setActivatingId(asset.id);
+      await activateAsset(asset.id);
+      await fetchAssets();
+
+      toast({
+        title: "Đã kích hoạt",
+        description: "Tài sản đã được chuyển sang active.",
+        status: "success",
+        duration: 2500,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Activate asset failed:", error);
+
+      if (isUnauthorizedError(error)) {
+        handleUnauthorized();
+      }
+
+      toast({
+        title: "Thao tác thất bại",
+        description: error.message || "Không thể kích hoạt tài sản.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setActivatingId(null);
+    }
+  };
+
   return (
     <Box pt={{ base: "130px", md: "80px", xl: "80px" }}>
       <ColumnsTable
@@ -472,6 +537,7 @@ export default function Assets() {
         loading={loading}
         onSaveAsset={{ handler: handleSaveAsset, loadingId: savingId }}
         onDeactivateAsset={{ handler: handleDeactivateAsset, loadingId: deactivatingId }}
+        onActivateAsset={{ handler: handleActivateAsset, loadingId: activatingId }}
         onCreateAsset={{ handler: handleCreateAsset, loading: creating }}
         onApproveAsset={{ handler: handleApproveAsset, loadingId: approvingId }}
         onRejectAsset={{ handler: handleRejectAsset, loadingId: rejectingId }}

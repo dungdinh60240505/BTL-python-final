@@ -448,13 +448,9 @@ export default function SupplyModal(props) {
 
                   {!isCreateMode ? (
                     <GridItem>
-                      <FormControl display="flex" alignItems="center">
-                        <FormLabel mb="0">Hoạt động</FormLabel>
-                        <Switch
-                          isChecked={formData.is_active}
-                          onChange={(e) => handleChange("is_active", e.target.checked)}
-                          isDisabled
-                        />
+                      <FormControl>
+                        <FormLabel>Trạng thái hoạt động</FormLabel>
+                        <Input value={supply?.is_active ? "Hoạt động" : "Không hoạt động"} readOnly />
                       </FormControl>
                     </GridItem>
                   ) : null}

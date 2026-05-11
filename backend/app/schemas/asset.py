@@ -6,6 +6,7 @@ from decimal import Decimal
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.asset import AssetCondition, AssetStatus
+from app.schemas.category import CategorySimple
 from app.schemas.department import DepartmentSimple
 from app.schemas.user import UserSimple
 
@@ -77,6 +78,7 @@ class AssetResponse(BaseModel):
     assigned_user_id: int | None = None
     assigned_department: DepartmentSimple | None = None
     assigned_user: UserSimple | None = None
+    category: CategorySimple | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

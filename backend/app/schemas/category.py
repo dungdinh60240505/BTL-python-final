@@ -68,6 +68,13 @@ class CategoryNeedResponse(BaseModel):
     updated_at: datetime
 
 
+class CategorySimple(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    category_code: str
+    category_name: str
+
+
 class CategoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

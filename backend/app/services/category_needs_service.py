@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.asset import Asset
 from app.models.asset_quantity import AssetQuantity
 from app.models.category import Category, CategoryNeed
+from app.models.supply import Supply
 from app.schemas.category import CategoryNeedCreate, CategoryNeedUpdate
 
 
@@ -35,11 +36,41 @@ def get_category_need_or_404(
     return need
 
 
+def ensure_category_need(db: Session, category_id: int, department_id: int | None) -> CategoryNeed | None:
+    """Tạo CategoryNeed nếu chưa tồn tại với category_id và department_id.
+
+    Trả về None nếu category_id hoặc department_id là None (không tạo).
+    """
+    if category_id is None or department_id is None:
+        return None
+
+    existing = db.execute(
+        select(CategoryNeed).where(
+            CategoryNeed.category_id == category_id,
+            CategoryNeed.department_id == department_id,
+        )
+    ).scalar_one_or_none()
+
+    if existing is not None:
+        return existing
+
+    need = CategoryNeed(
+        category_id=category_id,
+        department_id=department_id,
+        require_quantity=0,
+        is_active=True,
+    )
+    db.add(need)
+    db.commit()
+    db.refresh(need)
+    return need
+
+
 def _get_current_quantity(db: Session, category_id: int, category_type: str, department_id: int | None) -> int:
     """Tính tổng số lượng tài sản thực tế của danh mục trong phòng ban.
 
     - Loại 'asset'   → đếm bảng Asset (tài sản đơn lẻ)
-    - Loại 'supply'  → đếm bảng AssetQuantity (tài sản số lượng / vật tư)
+    - Loại 'supply'  → đếm tổng quantity_in_stock bảng Supply (vật tư)
     """
     if department_id is None:
         return 0
@@ -57,13 +88,13 @@ def _get_current_quantity(db: Session, category_id: int, category_type: str, dep
         total += asset_count
     elif category_type == "supply":
         qty_sum = db.execute(
-            select(func.coalesce(func.sum(AssetQuantity.available_quantity), 0)).where(
-                AssetQuantity.category_id == category_id,
-                AssetQuantity.assigned_department_id == department_id,
-                AssetQuantity.is_active == True,
+            select(func.coalesce(func.sum(Supply.quantity_in_stock), 0)).where(
+                Supply.category_id == category_id,
+                Supply.managed_department_id == department_id,
+                Supply.is_active == True,
             )
         ).scalar() or 0
-        total += qty_sum
+        total += float(qty_sum)
 
     return total
 

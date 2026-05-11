@@ -11,6 +11,7 @@ from app.models.department import Department
 from app.models.supply import Supply
 from app.models.user import User, UserRole
 from app.schemas.supply import SupplyCreate, SupplyStockUpdate, SupplyUpdate
+from app.services.category_needs_service import ensure_category_need
 
 
 def _apply_supply_visibility_scope(statement, current_user: User | None):
@@ -44,7 +45,7 @@ def get_supply_by_id(
 ) -> Supply | None:
     statement = (
         select(Supply)
-        .options(selectinload(Supply.managed_department))
+        .options(selectinload(Supply.managed_department), selectinload(Supply.category))
         .where(Supply.id == supply_id)
     )
 
@@ -153,6 +154,9 @@ def create_supply(db: Session, payload: SupplyCreate) -> Supply:
     db.add(supply)
     db.commit()
     db.refresh(supply)
+
+    if supply.category_id is not None and supply.managed_department_id is not None:
+        ensure_category_need(db, supply.category_id, supply.managed_department_id)
 
     return get_supply_or_404(db=db, supply_id=supply.id)
 

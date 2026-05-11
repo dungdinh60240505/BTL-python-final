@@ -8,6 +8,7 @@ from app.models.asset import Asset
 from app.models.department import Department
 from app.models.user import User, UserRole
 from app.schemas.asset import AssetCreate, AssetStatusUpdate, AssetUpdate
+from app.services.category_needs_service import ensure_category_need
 
 
 def _apply_asset_visibility_scope(statement, current_user: User | None):
@@ -49,6 +50,7 @@ def get_asset_by_id(
         .options(
             selectinload(Asset.assigned_department),
             selectinload(Asset.assigned_user),
+            selectinload(Asset.category),
         )
         .where(Asset.id == asset_id)
     )
@@ -189,6 +191,9 @@ def create_asset(db: Session, payload: AssetCreate) -> Asset:
     db.add(asset)
     db.commit()
     db.refresh(asset)
+
+    if asset.category_id is not None and asset.assigned_department_id is not None:
+        ensure_category_need(db, asset.category_id, asset.assigned_department_id)
 
     return get_asset_or_404(db=db, asset_id=asset.id)
 

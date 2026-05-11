@@ -19,6 +19,7 @@ from app.schemas.location_quantity_asset import (
     LocationQuantityAssetUpdate,
 )
 from app.services.asset_quantity_service import (
+    activate_asset_quantity,
     approve_asset_quantity,
     create_asset_quantity,
     deactivate_asset_quantity,
@@ -152,6 +153,16 @@ def deactivate_existing_asset_quantity(
 ):
     asset_quantity = get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
     return deactivate_asset_quantity(db=db, asset_quantity=asset_quantity)
+
+
+@router.patch("/{asset_quantity_id}/activate", response_model=AssetQuantityResponse)
+def activate_existing_asset_quantity(
+    asset_quantity_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN)),
+):
+    asset_quantity = get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return activate_asset_quantity(db=db, asset_quantity=asset_quantity)
 
 
 # ── Location endpoints ─────────────────────────────────────────────────────────

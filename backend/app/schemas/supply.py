@@ -5,6 +5,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.category import CategorySimple
 from app.schemas.department import DepartmentSimple
 
 
@@ -62,6 +63,7 @@ class SupplyResponse(BaseModel):
     category_id: int | None = None
     managed_department_id: int | None = None
     managed_department: DepartmentSimple | None = None
+    category: CategorySimple | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -68,6 +68,14 @@ export function deactivateAsset(assetId) {
   });
 }
 
+export function activateAsset(assetId) {
+  return apiRequest(`/asset-quantities/${assetId}/activate`, {
+    method: "PATCH",
+    auth: true,
+    fallbackErrorMessage: "Kích hoạt tài sản thất bại.",
+  });
+}
+
 export function listLocations(assetId) {
   return apiRequest(`/asset-quantities/${assetId}/locations`, {
     method: "GET",

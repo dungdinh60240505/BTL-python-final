@@ -265,10 +265,12 @@ export default function AssetModal(props) {
     isOpen,
     isSubmitting,
     isDeactivating,
+    isActivating,
     isApproving,
     isRejecting,
     onClose,
     onDeactivate,
+    onActivate,
     onApprove,
     onReject,
     onSave,
@@ -552,14 +554,6 @@ export default function AssetModal(props) {
                     </Select>
                   </FormControl>
                 </GridItem>
-                {!isCreateMode && (
-                  <GridItem>
-                    <FormControl display="flex" alignItems="center">
-                      <FormLabel mb="0">Hoạt động</FormLabel>
-                      <Switch isChecked={formData.is_active} onChange={(e) => handleChange("is_active", e.target.checked)}  />
-                    </FormControl>
-                  </GridItem>
-                )}
               </Grid>
 
               <FormControl>
@@ -585,7 +579,7 @@ export default function AssetModal(props) {
           ) : isReadOnly ? (
             <>
               <Button variant="outline" onClick={onClose}>Đóng</Button>
-              {canApproveReject && (
+              {/* {canApproveReject && (
                 <>
                   <Button colorScheme="red" variant="outline" onClick={() => onReject?.(asset)} isLoading={isRejecting}>
                     Không duyệt
@@ -594,7 +588,7 @@ export default function AssetModal(props) {
                     Duyệt
                   </Button>
                 </>
-              )}
+              )} */}
               {canManageAssets && (
                 <Button colorScheme="blue" onClick={() => setIsEditing(true)}>Sửa</Button>
               )}
@@ -602,11 +596,25 @@ export default function AssetModal(props) {
           ) : (
             <>
               <Button variant="outline" onClick={() => setIsEditing(false)}>Hủy</Button>
-              {canDeactivateAssetByRole && asset?.is_active && (
-                <Button colorScheme="red" variant="outline" onClick={() => onDeactivate?.(asset)} isLoading={isDeactivating}>
+              {canDeactivateAssetByRole && (asset?.is_active ? (
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => onDeactivate?.(asset)}
+                  isLoading={isDeactivating}
+                >
                   Vô hiệu hóa
                 </Button>
-              )}
+              ) : (
+                <Button
+                  colorScheme="red"
+                  variant="outline"
+                  onClick={() => onActivate?.(asset)}
+                  isLoading={isActivating}
+                >
+                  Kích hoạt
+                </Button>
+              ))}
               <Button colorScheme="blue" onClick={handleSubmit} isLoading={isSubmitting}>Lưu</Button>
             </>
           )}

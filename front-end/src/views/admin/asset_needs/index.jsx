@@ -42,7 +42,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "components/card/Card";
 import { getCurrentUser, logout } from "api/authApi";
 import { isUnauthorizedError } from "api/http";
-import { listCategoryNeeds, createCategoryNeed, updateCategoryNeed, deleteCategoryNeed } from "api/categoryNeedsApi";
+import { listCategoryNeeds, createCategoryNeed, updateCategoryRequireQuantity, deleteCategoryNeed } from "api/categoryNeedsApi";
 import { listCategories } from "api/categoriesApi";
 import { listDepartments } from "api/departmentsApi";
 
@@ -285,8 +285,7 @@ export default function AssetNeeds() {
 
     try {
       setSavingId(editingNeed.id);
-      await updateCategoryNeed(editingNeed.id, {
-        category_id: parseInt(formData.category_id, 10),
+      await updateCategoryRequireQuantity(editingNeed.category_id, {
         department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
         require_quantity: qty,
         is_active: formData.is_active,

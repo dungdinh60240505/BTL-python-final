@@ -18,6 +18,15 @@ export function createCategoryNeed(payload) {
   });
 }
 
+export function updateCategoryRequireQuantity(categoryId, payload) {
+  return apiRequest(`/categories/${categoryId}/require-quantity`, {
+    method: "PATCH",
+    auth: true,
+    body: payload,
+    fallbackErrorMessage: "Cập nhật nhu cầu thất bại.",
+  });
+}
+
 export function updateCategoryNeed(categoryNeedId, payload) {
   return apiRequest(`/category-needs/${categoryNeedId}`, {
     method: "PATCH",

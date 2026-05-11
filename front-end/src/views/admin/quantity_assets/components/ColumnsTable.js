@@ -121,6 +121,7 @@ export default function ColumnsTable(props) {
     userOptions = [],
     onSaveAsset,
     onDeactivateAsset,
+    onActivateAsset,
     onCreateAsset,
     onApproveAsset,
     onRejectAsset,
@@ -267,6 +268,11 @@ export default function ColumnsTable(props) {
 
   const handleReject = async (asset) => {
     await onRejectAsset?.handler?.(asset);
+    handleCloseModal();
+  };
+
+  const handleActivate = async (asset) => {
+    await onActivateAsset?.handler?.(asset);
     handleCloseModal();
   };
 
@@ -544,11 +550,13 @@ export default function ColumnsTable(props) {
         isDeactivating={Boolean(selectedAsset && selectedAsset.id === onDeactivateAsset?.loadingId)}
         isApproving={Boolean(selectedAsset && selectedAsset.id === onApproveAsset?.loadingId)}
         isRejecting={Boolean(selectedAsset && selectedAsset.id === onRejectAsset?.loadingId)}
+        isActivating={Boolean(selectedAsset && selectedAsset.id === onActivateAsset?.loadingId)}
         onClose={handleCloseModal}
         onSave={modalMode === "create" ? handleCreate : handleSave}
         onDeactivate={handleDeactivate}
         onApprove={handleApprove}
         onReject={handleReject}
+        onActivate={handleActivate}
         mode={modalMode}
         canManageAssets={canManageAssets}
         canDeactivateAssetByRole={canDeactivateAssetByRole}
