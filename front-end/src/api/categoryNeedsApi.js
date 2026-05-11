@@ -19,7 +19,7 @@ export function createCategoryNeed(payload) {
 }
 
 export function updateCategoryRequireQuantity(categoryId, payload) {
-  return apiRequest(`/categories/${categoryId}/require-quantity`, {
+  return apiRequest(`/category-needs/${categoryId}`, {
     method: "PATCH",
     auth: true,
     body: payload,

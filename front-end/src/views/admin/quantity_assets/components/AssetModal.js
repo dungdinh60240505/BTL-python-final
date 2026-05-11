@@ -1,4 +1,5 @@
 import React from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import {
   Badge,
   Box,
@@ -36,9 +37,11 @@ import {
 import { AddIcon, DeleteIcon, CheckIcon} from "@chakra-ui/icons";
 import {
   createLocation,
+  createLostLocation,
   deleteLocation,
   updateLocation,
   approveLocation,
+  approveLostLocation,
   listLocations,
 } from "api/quantityAssetsApi";
 import { getCurrentUser } from "api/authApi";
@@ -95,6 +98,7 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
   const [loading, setLoading] = React.useState(true);
   const [newRoomCode, setNewRoomCode] = React.useState("");
   const [newQuantity, setNewQuantity] = React.useState("");
+  const [newReason, setNewReason] = React.useState("");
   const [adding, setAdding] = React.useState(false);
   const [deletingId, setDeletingId] = React.useState(null);
   const [approvingId, setApprovingId] = React.useState(null);
@@ -106,6 +110,7 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
     try {
       setLoading(true);
       const data = await listLocations(assetId);
+      console.log("dữ liệu vị trí phân bố: ", data);
       setLocations(data);
     } catch {
       toast({ title: "Không tải được vị trí", status: "error", duration: 2500, isClosable: true });
@@ -126,13 +131,41 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
     }
     try {
       setAdding(true);
-      await createLocation(assetId, { room_code: newRoomCode.trim(), quantity: qty });
+      console.log("reason: ", newReason.trim());
+      await createLocation(assetId, 
+        { 
+          room_code: newRoomCode.trim(), 
+          quantity: qty, 
+          reason: newReason.trim() 
+        }
+      );
       setNewRoomCode("");
       setNewQuantity("");
+      setNewReason("");
       await fetchLocations();
       toast({ title: "Đã thêm vị trí", status: "success", duration: 2000, isClosable: true });
     } catch (err) {
       toast({ title: "Thêm thất bại", description: err.message, status: "error", duration: 3000, isClosable: true });
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const handleAddLost = async () => {
+    const qty = parseInt(newQuantity, 10);
+    if (!newRoomCode.trim() || isNaN(qty) ) {
+      toast({ title: "Mã phòng và số lượng không hợp lệ", status: "warning", duration: 2000, isClosable: true });
+      return;
+    }
+    try {
+      setAdding(true);
+      await createLostLocation(assetId, { room_code: newRoomCode.trim(), quantity: qty });
+      setNewRoomCode("");
+      setNewQuantity("");
+      await fetchLocations();
+      toast({ title: "Đã thêm vị trí báo mất", status: "success", duration: 2000, isClosable: true });
+    } catch (err) {
+      toast({ title: "Thêm thất bại báo mất", description: err.message, status: "error", duration: 3000, isClosable: true });
     } finally {
       setAdding(false);
     }
@@ -151,10 +184,24 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
     }
   };
 
-  const handleApproval = async (locId) => {
+  const handleApproval = async (locId, room_code) => {
     try {
       setApprovingId(locId);
-      await approveLocation(assetId, locId);
+      await approveLocation(assetId, locId, {room_code: room_code});
+      await fetchLocations();
+      toast({ title: "(Admin) đã xác nhận vị trí", status: "success", duration: 2000, isClosable: true });
+    } catch (err) {
+      toast({ title: "(Admin) xác nhận thất bại", description: err.message, status: "error", duration: 3000, isClosable: true });
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleApprovalLost = async (locId, room_code) => {
+    try {
+      
+      setApprovingId(locId);
+      await approveLostLocation(assetId, locId, {room_code: room_code});
       await fetchLocations();
       toast({ title: "(Admin) đã xác nhận vị trí", status: "success", duration: 2000, isClosable: true });
     } catch (err) {
@@ -174,7 +221,7 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
             <Tr>
               <Th>Mã phòng</Th>
               <Th isNumeric>Số lượng</Th>
-              {/* <Th isNumeric>Sử dụng</Th> */}
+              <Th>Lí do</Th>
               <Th>Trạng thái</Th>
               {canManage && <Th />}
             </Tr>
@@ -186,7 +233,7 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
                 <Tr key={loc.id} bg={isKho ? khoRowBg : undefined}>
                   <Td fontWeight={isKho ? "700" : "normal"}>{loc.room_code}</Td>
                   <Td isNumeric>{loc.quantity}</Td>
-                  {/* <Td isNumeric>{loc.used}</Td> */}
+                  <Td >{loc.reason}</Td>
                   <Td>
                     <Badge colorScheme={LOC_APPROVAL_COLOR[loc.status_approval] || "gray"} borderRadius="999px" px="8px">
                       {LOC_APPROVAL_LABEL[loc.status_approval] || loc.status_approval}
@@ -211,7 +258,7 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
                           variant="ghost"
                           icon={<CheckIcon />}
                           isLoading={deletingId === loc.id}
-                          onClick={() => handleApproval(loc.id)}
+                          onClick= {() =>  loc.quantity > 0 ?  handleApproval(loc.id, loc.room_code) :  handleApprovalLost(loc.id, loc.room_code) }
                           aria-label="Xóa vị trí"
                         />
                       )}
@@ -247,8 +294,20 @@ function LocationTable({ assetId, canManage, currentUserRole }) {
             onChange={(e) => setNewQuantity(e.target.value)}
             maxW="110px"
           />
+          <Input
+            size="sm"
+            type="text"
+            min="1"
+            placeholder="Số lượng"
+            value={newReason}
+            onChange={(e) => setNewReason(e.target.value)}
+            maxW="300px"
+          />
           <Button size="sm" colorScheme="blue" leftIcon={<AddIcon />} isLoading={adding} onClick={handleAdd}>
             Thêm
+          </Button>
+          <Button size="sm" colorScheme="red" leftIcon={<AddIcon />} isLoading={adding} onClick={handleAddLost}>
+            Báo mất
           </Button>
         </HStack>
       )}
@@ -297,6 +356,7 @@ export default function AssetModal(props) {
     setFormData({
       code: asset.code || "",
       name: asset.name || "",
+      qr_value: asset.qr_value ?? "",
       category_id: asset.category_id ? String(asset.category_id) : "",
       quantity: asset.quantity || 0,
       available_quantity: asset.available_quantity || 0,
@@ -399,7 +459,16 @@ export default function AssetModal(props) {
                 <GridItem><FormControl><FormLabel>Thời gian tạo</FormLabel><Input value={asset?.created_at || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Cập nhật gần nhất</FormLabel><Input value={asset?.updated_at || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
               </Grid>
-
+                <FormControl>
+                  <FormLabel>
+                    Mã QR
+                  </FormLabel>
+                  <QRCodeCanvas
+                    value={asset.qr_value || ""}
+                    size={100}
+                    includeMargin={true}
+                  />
+                </FormControl>
               <FormControl><FormLabel>Thông số</FormLabel><Textarea value={asset?.specification || ""} resize="vertical" {...readOnlyFieldProps} /></FormControl>
               <FormControl><FormLabel>Ghi chú</FormLabel><Textarea value={asset?.note || ""} resize="vertical" {...readOnlyFieldProps} /></FormControl>
 

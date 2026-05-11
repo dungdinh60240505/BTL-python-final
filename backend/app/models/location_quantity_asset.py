@@ -28,8 +28,9 @@ class LocationQuantityAsset(Base):
         String(50), nullable=False, default="KHO"
     )
     quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    used: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-
+    reason:  Mapped[str] = mapped_column(
+        String(50), nullable=True
+    )
     status_approval: Mapped[LocationApprovalStatus] = mapped_column(
         SqlEnum(
             LocationApprovalStatus,
@@ -50,13 +51,6 @@ class LocationQuantityAsset(Base):
 
     quantity_asset: Mapped["AssetQuantity | None"] = relationship(
         "AssetQuantity", back_populates="locations"
-    )
-
-    __table_args__ = (
-        CheckConstraint(
-            "used >= 0 AND used <= quantity",
-            name="location_used_check",
-        ),
     )
 
     def __repr__(self) -> str:

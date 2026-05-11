@@ -17,6 +17,8 @@ class AssetQuantityBase(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     code: str = Field(min_length=2, max_length=100)
+    qr_value: str | None = Field(default=None, max_length=100)
+
     name: str = Field(min_length=2, max_length=255)
     quantity: int = Field(default=0, ge=0)
     available_quantity: int | None = Field(default=None, ge=0)
@@ -44,6 +46,7 @@ class AssetQuantityUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     code: str | None = Field(default=None, min_length=2, max_length=100)
+    qr_value: str | None = Field(default=None, max_length=100)
     name: str | None = Field(default=None, min_length=2, max_length=255)
     quantity: int | None = Field(default=None, ge=0)
     available_quantity: int | None = Field(default=None, ge=0)
@@ -68,6 +71,7 @@ class AssetQuantityResponse(BaseModel):
 
     id: int
     code: str
+    qr_value: str | None = None
     name: str
     quantity: int
     available_quantity: int

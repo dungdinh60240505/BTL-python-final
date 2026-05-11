@@ -36,7 +36,12 @@ def get_category_need_or_404(
     return need
 
 
-def ensure_category_need(db: Session, category_id: int, department_id: int | None) -> CategoryNeed | None:
+def ensure_category_need(
+        db: Session, 
+        category_id: int, 
+        department_id: int | None, 
+        detail: str | None = None 
+        ) -> CategoryNeed | None:
     """Tạo CategoryNeed nếu chưa tồn tại với category_id và department_id.
 
     Trả về None nếu category_id hoặc department_id là None (không tạo).
@@ -48,6 +53,7 @@ def ensure_category_need(db: Session, category_id: int, department_id: int | Non
         select(CategoryNeed).where(
             CategoryNeed.category_id == category_id,
             CategoryNeed.department_id == department_id,
+            CategoryNeed.detail == detail
         )
     ).scalar_one_or_none()
 
@@ -58,6 +64,7 @@ def ensure_category_need(db: Session, category_id: int, department_id: int | Non
         category_id=category_id,
         department_id=department_id,
         require_quantity=0,
+        detail="",
         is_active=True,
     )
     db.add(need)
@@ -66,7 +73,12 @@ def ensure_category_need(db: Session, category_id: int, department_id: int | Non
     return need
 
 
-def _get_current_quantity(db: Session, category_id: int, category_type: str, department_id: int | None) -> int:
+def _get_current_quantity(
+        db: Session, 
+        category_id: int, 
+        category_type: str, 
+        department_id: int | None
+        ) -> int:
     """Tính tổng số lượng tài sản thực tế của danh mục trong phòng ban.
 
     - Loại 'asset'   → đếm bảng Asset (tài sản đơn lẻ)
@@ -106,6 +118,7 @@ def list_category_needs(
     limit: int = 200,
     department_id: int | None = None,
     category_id: int | None = None,
+    detail: str | None = None,
     is_active: bool | None = None,
 ) -> list[dict]:
     statement = (
@@ -120,6 +133,8 @@ def list_category_needs(
         statement = statement.where(CategoryNeed.department_id == department_id)
     if category_id is not None:
         statement = statement.where(CategoryNeed.category_id == category_id)
+    if detail is not None:
+        statement = statement.where(CategoryNeed.detail == detail)
     if is_active is not None:
         statement = statement.where(CategoryNeed.is_active == is_active)
 
@@ -144,6 +159,7 @@ def create_category_need(
         category_id=payload.category_id,
         department_id=payload.department_id,
         require_quantity=payload.require_quantity,
+        detail=payload.detail,
         is_active=True,
     )
     db.add(need)
@@ -162,6 +178,8 @@ def update_category_need(
         category_need.department_id = payload.department_id
     if payload.require_quantity is not None:
         category_need.require_quantity = payload.require_quantity
+    if payload.detail is not None:
+        category_need.detail = payload.detail
     if payload.is_active is not None:
         category_need.is_active = payload.is_active
     db.add(category_need)

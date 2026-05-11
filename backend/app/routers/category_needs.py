@@ -15,7 +15,7 @@ from app.services.category_needs_service import (
     delete_category_need,
     get_category_need_or_404,
     list_category_needs,
-    update_category_need,
+    update_category_need
 )
 
 
@@ -29,6 +29,7 @@ class CategoryNeedDetailResponse(BaseModel):
     category_id: int
     department_id: int | None = None
     require_quantity: int
+    detail: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime
@@ -47,6 +48,7 @@ def _map_to_response(need, current_quantity: int) -> CategoryNeedDetailResponse:
         category_id=need.category_id,
         department_id=need.department_id,
         require_quantity=need.require_quantity,
+        detail=need.detail if need.category else None,
         is_active=need.is_active,
         created_at=need.created_at,
         updated_at=need.updated_at,
@@ -105,7 +107,9 @@ def update_existing_category_need(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN)),
 ):
+    
     need = get_category_need_or_404(db=db, category_need_id=category_need_id)
+    #bị lỗi ở đây, không tìm thấy id
     need, current_qty = update_category_need(db=db, category_need=need, payload=payload)
     return _map_to_response(need, current_qty)
 

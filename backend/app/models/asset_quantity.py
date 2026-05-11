@@ -46,6 +46,10 @@ class AssetQuantity(Base):
     code: Mapped[str] = mapped_column(
         String(100), unique=True, index=True, nullable=False
     )
+    qr_value: Mapped[str] = mapped_column(
+        String(100), unique=True, index=True, nullable=True
+    )
+
     quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     available_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     serial_number: Mapped[str | None] = mapped_column(

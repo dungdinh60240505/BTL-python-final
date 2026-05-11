@@ -42,7 +42,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "components/card/Card";
 import { getCurrentUser, logout } from "api/authApi";
 import { isUnauthorizedError } from "api/http";
-import { listCategoryNeeds, createCategoryNeed, updateCategoryRequireQuantity, deleteCategoryNeed } from "api/categoryNeedsApi";
+import { listCategoryNeeds, createCategoryNeed, updateCategoryNeed, deleteCategoryNeed } from "api/categoryNeedsApi";
 import { listCategories } from "api/categoriesApi";
 import { listDepartments } from "api/departmentsApi";
 
@@ -88,6 +88,7 @@ const initialForm = {
   category_id: "",
   department_id: "",
   require_quantity: "",
+  detail: "",
   is_active: true,
 };
 
@@ -255,9 +256,11 @@ export default function AssetNeeds() {
 
   const handleOpenEdit = (need) => {
     setFormData({
+      id: String(need.id),
       category_id: String(need.category_id),
       department_id: need.department_id ? String(need.department_id) : "",
       require_quantity: String(need.require_quantity),
+      detail: String(need.detail ?? null),
       is_active: need.is_active ?? true,
     });
     setEditingNeed(need);
@@ -285,12 +288,15 @@ export default function AssetNeeds() {
 
     try {
       setSavingId(editingNeed.id);
-      await updateCategoryRequireQuantity(editingNeed.category_id, {
+      console.log("id nhu cầu: ", editingNeed.id);
+      console.log("payload edit: ", formData);
+      const res_edit = await updateCategoryNeed(editingNeed.id, {
         department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
         require_quantity: qty,
+        detail: formData.detail ?? null,
         is_active: formData.is_active,
       });
-
+      console.log("sau edit: ", res_edit)
       const params = {};
       if (!showAll && deptFilter) params.department_id = parseInt(deptFilter, 10);
       if (categoryFilter) params.category_id = parseInt(categoryFilter, 10);
@@ -324,14 +330,15 @@ export default function AssetNeeds() {
         category_id: parseInt(formData.category_id, 10),
         department_id: formData.department_id ? parseInt(formData.department_id, 10) : null,
         require_quantity: qty,
+        detail: formData.detail
       });
 
       const params = {};
       if (!showAll && deptFilter) params.department_id = parseInt(deptFilter, 10);
       if (categoryFilter) params.category_id = parseInt(categoryFilter, 10);
+      console.log("param get nhu cầu: ",params)
       const data = await fetchNeeds(params);
       setNeeds(data);
-
       toast({ title: "Tạo thành công", status: "success", duration: 2500, isClosable: true });
       handleCloseModal();
     } catch (error) {
@@ -483,6 +490,7 @@ export default function AssetNeeds() {
                 <Th borderColor={borderColor}>STT</Th>
                 <Th borderColor={borderColor}>Phòng ban</Th>
                 <Th borderColor={borderColor}>Danh mục</Th>
+                <Th borderColor={borderColor}>Chi tiết</Th>
                 <Th borderColor={borderColor}>Loại</Th>
                 <Th borderColor={borderColor} isNumeric>Hiện có</Th>
                 <Th borderColor={borderColor} isNumeric>Số lượng cần</Th>
@@ -523,6 +531,7 @@ export default function AssetNeeds() {
                       )}
                     </Td>
                     <Td borderColor={borderColor}>{row.category_name || row.category_id}</Td>
+                    <Td borderColor={borderColor}>{row.detail || ""}</Td>
                     <Td borderColor={borderColor}>
                       <TypeBadge type={row.category_type} />
                     </Td>
@@ -650,6 +659,17 @@ export default function AssetNeeds() {
                   value={formData.require_quantity}
                   onChange={(e) => setFormData((p) => ({ ...p, require_quantity: e.target.value }))}
                   placeholder="VD: 10"
+                  borderRadius="12px"
+                />
+              </FormControl>
+
+              <FormControl >
+                <FormLabel>Chi tiết</FormLabel>
+                <Input
+                  type="text"
+                  value={formData.detail ?? ""}
+                  onChange={(e) => setFormData((p) => ({ ...p, detail: e.target.value }))}
+                  placeholder="VD: chi tiết"
                   borderRadius="12px"
                 />
               </FormControl>

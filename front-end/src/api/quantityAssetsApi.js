@@ -93,6 +93,15 @@ export function createLocation(assetId, payload) {
   });
 }
 
+export function createLostLocation(assetId, payload) {
+  return apiRequest(`/asset-quantities/${assetId}/lost-locations`, {
+    method: "POST",
+    auth: true,
+    body: payload,
+    fallbackErrorMessage: "Thêm vị trí báo mất thất bại.",
+  });
+}
+
 export function updateLocation(assetId, locationId, payload) {
   return apiRequest(`/asset-quantities/${assetId}/locations/${locationId}`, {
     method: "PUT",
@@ -102,10 +111,20 @@ export function updateLocation(assetId, locationId, payload) {
   });
 }
 
-export function approveLocation(assetId, locationId) {
+export function approveLocation(assetId, locationId, payload) {
   return apiRequest(`/asset-quantities/${assetId}/locations/${locationId}`, {
     method: "PATCH",
     auth: true,
+    body: payload,
+    fallbackErrorMessage: "Xác nhận vị trí thất bại.",
+  });
+}
+
+export function approveLostLocation(assetId, locationId, payload) {
+  return apiRequest(`/asset-quantities/${assetId}/lost-locations/${locationId}`, {
+    method: "PATCH",
+    auth: true,
+    body: payload,
     fallbackErrorMessage: "Xác nhận vị trí thất bại.",
   });
 }
@@ -117,3 +136,5 @@ export function deleteLocation(assetId, locationId) {
     fallbackErrorMessage: "Xóa vị trí thất bại.",
   });
 }
+
+

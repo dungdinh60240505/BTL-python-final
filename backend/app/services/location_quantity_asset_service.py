@@ -40,7 +40,6 @@ def create_kho_location(db: Session, quantity_assets_id: int, lot_quantity: int)
     kho = LocationQuantityAsset(
         room_code=KHO_ROOM_CODE,
         quantity=lot_quantity,
-        used=0,
         status_approval=LocationApprovalStatus.APPROVAL,
         quantity_assets_id=quantity_assets_id,
     )
@@ -67,14 +66,13 @@ def create_location(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Số lượng KHO không đủ. Hiện còn {kho.quantity}.",
         )
-
     kho.quantity -= payload.quantity
     db.add(kho)
 
     location = LocationQuantityAsset(
         room_code=payload.room_code.strip().upper(),
         quantity=payload.quantity,
-        used=0,
+        reason=payload.reason,
         status_approval=LocationApprovalStatus.PENDING,
         quantity_assets_id=quantity_assets_id,
     )
@@ -82,6 +80,52 @@ def create_location(
     db.commit()
     db.refresh(location)
     return location
+
+
+def get_location_by_code(db: Session, location_code: str) -> LocationQuantityAsset | None:
+    statement = select(LocationQuantityAsset).where(LocationQuantityAsset.room_code == location_code)
+    return db.scalar(statement)
+
+
+
+#tạo báo mất -> không cộng trừ dữ liệu nào -> đợi duyệt
+def create_lost_location(
+    db: Session,
+    quantity_assets_id: int,
+    payload: LocationQuantityAssetCreate,
+) -> LocationQuantityAsset:
+    
+    kho = _get_kho_row(db, quantity_assets_id)
+    if kho is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Lô tài sản chưa được duyệt hoặc chưa có kho.",
+        )
+    
+    location = get_location_by_code(db, payload.room_code)
+    if location is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Mã phòng không có trong cơ sở dữ liệu.",
+        )
+    
+    if location.quantity + payload.quantity < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Số lượng mất nhiều hơn số lượng hiện có tại phòng {payload.room_code}. Hiện còn {kho.quantity}.",
+        )
+    # quantity < 0 với dữ liệu báo mất, hỏng
+    lost_location = LocationQuantityAsset(
+        room_code=payload.room_code.strip().upper(),
+        quantity=payload.quantity,
+        reason=payload.reason,
+        status_approval=LocationApprovalStatus.PENDING,
+        quantity_assets_id=quantity_assets_id,
+    )
+    db.add(lost_location)
+    db.commit()
+    db.refresh(lost_location)
+    return lost_location
 
 
 def update_location(
@@ -114,6 +158,9 @@ def update_location(
 
     kho.quantity -= delta
     location.quantity = payload.quantity
+    location.reason = payload.reason
+        
+
     db.add(kho)
     db.add(location)
     db.commit()
@@ -125,6 +172,54 @@ def approve_location_service(
     db: Session,
     quantity_assets_id: int,
     location_id: int,
+    room_code: str
+) -> None:
+    #location để duyệt
+    location = db.scalar(
+        select(LocationQuantityAsset).where(
+            LocationQuantityAsset.id == location_id,
+            LocationQuantityAsset.quantity_assets_id == quantity_assets_id
+        )
+    )
+    main_location = db.scalar(
+        select(LocationQuantityAsset).where(
+            LocationQuantityAsset.quantity_assets_id == quantity_assets_id,
+            LocationQuantityAsset.room_code == room_code,
+            LocationQuantityAsset.status_approval == LocationApprovalStatus.APPROVAL
+        )
+    )
+    
+
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vị trí không tìm thấy.")
+    if location.room_code == KHO_ROOM_CODE:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Không thể sửa hàng KHO.")
+
+    if location.status_approval == LocationApprovalStatus.APPROVAL:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Đã approve trước đó.",
+        )
+    
+    if main_location is not None:
+        main_location.quantity += location.quantity
+        db.delete(location)
+        db.commit()
+        db.refresh(main_location)
+        return main_location
+    else:
+        location.status_approval = LocationApprovalStatus.APPROVAL
+        db.commit()
+        db.refresh(location)
+        return location
+
+
+#duyệt báo mất -> slg phòng trừ đi slg mất -> xoá dữ liệu báo mất
+def approve_lost_location_service(
+    db: Session,
+    quantity_assets_id: int,
+    location_id: int,
+    room_code: int,
 ) -> None:
     location = db.scalar(
         select(LocationQuantityAsset).where(
@@ -145,10 +240,22 @@ def approve_location_service(
 
     location.status_approval = LocationApprovalStatus.APPROVAL
 
-    db.add(location)
+    lost_location = db.scalar(
+        select(LocationQuantityAsset).where(
+            LocationQuantityAsset.quantity_assets_id == quantity_assets_id,
+            LocationQuantityAsset.room_code == room_code,
+            LocationQuantityAsset.quantity >= 0
+        )
+    )
+    if lost_location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vị trí phòng báo mất/hỏng không được tìm thấy.")
+    
+    lost_location.quantity += location.quantity
+    db.delete(location)
+
     db.commit()
-    db.refresh(location)
-    return location
+    db.refresh(lost_location)
+    return lost_location
 
 
 def delete_location(db: Session, quantity_assets_id: int, location_id: int) -> None:

@@ -42,6 +42,7 @@ class CategoryNeedBase(BaseModel):
     category_id: int = Field(ge=1)
     department_id: int | None = Field(default=None, ge=1)
     require_quantity: int = Field(ge=0)
+    detail: str | None = None
 
 
 class CategoryNeedCreate(CategoryNeedBase):
@@ -53,6 +54,7 @@ class CategoryNeedUpdate(BaseModel):
 
     department_id: int | None = Field(default=None, ge=1)
     require_quantity: int = Field(ge=0)
+    detail: str | None = None
     is_active: bool | None = None
 
 
@@ -63,6 +65,7 @@ class CategoryNeedResponse(BaseModel):
     category_id: int
     department_id: int | None = None
     require_quantity: int
+    detail: str | None = None
     is_active: bool
     created_at: datetime
     updated_at: datetime

@@ -178,6 +178,10 @@ def create_asset_quantity(
     db.commit()
     db.refresh(asset_quantity)
 
+    asset_quantity.qr_value = f"http://localhost:8000/api/v1/asset-quantities/{asset_quantity.id}"
+    db.commit()
+    db.refresh(asset_quantity)
+
     if is_admin:
         create_kho_location(db=db, quantity_assets_id=asset_quantity.id, lot_quantity=normalized_quantity)
 

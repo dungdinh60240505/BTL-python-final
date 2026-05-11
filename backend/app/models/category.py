@@ -93,6 +93,7 @@ class CategoryNeed(Base):
         index=True,
     )
     require_quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    detail: Mapped[str] = mapped_column(String(255), index=False, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     category: Mapped[Category] = relationship("Category", back_populates="needs")

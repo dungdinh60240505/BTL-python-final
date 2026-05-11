@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Body
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -17,6 +17,7 @@ from app.schemas.location_quantity_asset import (
     LocationQuantityAssetCreate,
     LocationQuantityAssetResponse,
     LocationQuantityAssetUpdate,
+    ApproveLostLocationRequest
 )
 from app.services.asset_quantity_service import (
     activate_asset_quantity,
@@ -31,10 +32,12 @@ from app.services.asset_quantity_service import (
 )
 from app.services.location_quantity_asset_service import (
     create_location,
+    create_lost_location,
     delete_location,
     list_locations,
     update_location,
-    approve_location_service
+    approve_location_service,
+    approve_lost_location_service
 )
 
 router = APIRouter(prefix="/asset-quantities", tags=["Asset Quantities"])
@@ -192,6 +195,21 @@ def add_location(
     return create_location(db=db, quantity_assets_id=asset_quantity_id, payload=payload)
 
 
+@router.post(
+    "/{asset_quantity_id}/lost-locations",
+    response_model=LocationQuantityAssetResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_lost_location(
+    asset_quantity_id: int,
+    payload: LocationQuantityAssetCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return create_lost_location(db=db, quantity_assets_id=asset_quantity_id, payload=payload)
+
+
 @router.put(
     "/{asset_quantity_id}/locations/{location_id}",
     response_model=LocationQuantityAssetResponse,
@@ -217,6 +235,7 @@ def edit_location(
 def approve_location(
     asset_quantity_id: int,
     location_id: int,
+    payload: ApproveLostLocationRequest,#chỉ có room_code: str
     db: Session = Depends(get_db),
     _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ):
@@ -225,7 +244,28 @@ def approve_location(
         db=db,
         quantity_assets_id=asset_quantity_id,
         location_id=location_id,
+        room_code = payload.room_code.strip()
     )
+
+
+@router.patch(
+    "/{asset_quantity_id}/lost-locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def approve_lost_location(
+    asset_quantity_id: int,
+    location_id: int,
+    payload: ApproveLostLocationRequest,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
+):
+    get_asset_quantity_or_404(db=db, asset_quantity_id=asset_quantity_id)
+    return approve_lost_location_service(
+        db=db,
+        quantity_assets_id=asset_quantity_id,
+        location_id=location_id,
+        room_code=payload.room_code.strip()
+    )
+
 
 
 @router.delete("/{asset_quantity_id}/locations/{location_id}", status_code=status.HTTP_204_NO_CONTENT)
