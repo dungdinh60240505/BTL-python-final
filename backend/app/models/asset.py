@@ -57,6 +57,7 @@ class Asset(Base):
     serial_number: Mapped[str | None] = mapped_column(
         String(100), unique=True, nullable=True
     )
+    qr_value: Mapped[str] = mapped_column(String(100), unique=True, nullable=True)
     specification: Mapped[str | None] = mapped_column(Text, nullable=True)
     purchase_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     useful_life: Mapped[int | None] = mapped_column(Integer, nullable=True)

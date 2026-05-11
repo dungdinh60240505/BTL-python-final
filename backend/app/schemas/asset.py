@@ -17,6 +17,7 @@ class AssetBase(BaseModel):
     asset_code: str = Field(min_length=2, max_length=50)
     name: str = Field(min_length=2, max_length=255)
     serial_number: str | None = Field(default=None, max_length=100)
+    qr_value: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
     useful_life: int | None = Field(default=None, ge=0)
@@ -42,6 +43,7 @@ class AssetUpdate(BaseModel):
     asset_code: str | None = Field(default=None, min_length=2, max_length=50)
     name: str | None = Field(default=None, min_length=2, max_length=255)
     serial_number: str | None = Field(default=None, max_length=100)
+    qr_value: str | None = Field(default=None, max_length=100)
     specification: str | None = Field(default=None, max_length=2000)
     purchase_date: date | None = None
     useful_life: int | None = Field(default=None, ge=0)
@@ -63,6 +65,7 @@ class AssetResponse(BaseModel):
     id: int
     asset_code: str
     name: str
+    qr_value: str | None = None
     serial_number: str | None = None
     specification: str | None = None
     purchase_date: date | None = None

@@ -1,4 +1,5 @@
 import React from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import {
   Badge,
   Button,
@@ -43,6 +44,7 @@ const initialFormData = {
   name: "",
   category_id: "",
   serial_number: "",
+  qr_value: "",
   specification: "",
   purchase_date: "",
   useful_life: 0,
@@ -98,6 +100,7 @@ export default function AssetModal(props) {
       code: asset.code || "",
       name: asset.name || "",
       category_id: asset.category_id ? String(asset.category_id) : "",
+      qr_value: asset.qr_value || "",
       serial_number: asset.serial_number || "",
       specification: asset.specification || "",
       purchase_date: asset.purchase_date || "",
@@ -303,6 +306,17 @@ export default function AssetModal(props) {
                   </FormControl>
                 </GridItem>
               </Grid>
+
+              <FormControl>
+                <FormLabel>
+                  Mã QR
+                </FormLabel>
+                <QRCodeCanvas
+                  value={asset.qr_value || ""}
+                  size={100}
+                  includeMargin={true}
+                />
+              </FormControl>
 
               <FormControl>
                 <FormLabel>Thông số</FormLabel>

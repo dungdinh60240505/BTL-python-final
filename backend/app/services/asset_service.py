@@ -187,8 +187,12 @@ def create_asset(db: Session, payload: AssetCreate) -> Asset:
         assigned_user_id=assigned_user_id,
         is_active=payload.is_active,
     )
-
     db.add(asset)
+    db.commit()
+    db.refresh(asset)
+
+    asset.qr_value = f"http://localhost:8000/api/v1/assets/{asset.id}"
+
     db.commit()
     db.refresh(asset)
 

@@ -459,16 +459,7 @@ export default function AssetModal(props) {
                 <GridItem><FormControl><FormLabel>Thời gian tạo</FormLabel><Input value={asset?.created_at || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
                 <GridItem><FormControl><FormLabel>Cập nhật gần nhất</FormLabel><Input value={asset?.updated_at || ""} {...readOnlyFieldProps} /></FormControl></GridItem>
               </Grid>
-                <FormControl>
-                  <FormLabel>
-                    Mã QR
-                  </FormLabel>
-                  <QRCodeCanvas
-                    value={asset.qr_value || ""}
-                    size={100}
-                    includeMargin={true}
-                  />
-                </FormControl>
+                
               <FormControl><FormLabel>Thông số</FormLabel><Textarea value={asset?.specification || ""} resize="vertical" {...readOnlyFieldProps} /></FormControl>
               <FormControl><FormLabel>Ghi chú</FormLabel><Textarea value={asset?.note || ""} resize="vertical" {...readOnlyFieldProps} /></FormControl>
 
